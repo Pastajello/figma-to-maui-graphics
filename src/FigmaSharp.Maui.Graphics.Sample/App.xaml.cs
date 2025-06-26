@@ -6,7 +6,7 @@
         {
             InitializeComponent();
 
-            //var token = "figd_43YuFV2SJ1tA9S7So66nYiU3SEednmsgVt7CNeBw";
+            //var token = "INSERT HERE YOUR FIGMA PERSONAL ACCESS TOKEN";
             //FigmaApplication.Init(token);
 
             MainPage = new AppShell();
