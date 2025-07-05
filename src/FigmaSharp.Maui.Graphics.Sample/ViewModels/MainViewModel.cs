@@ -30,7 +30,9 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
             DrawableSet?.Invoke();
 #if DEBUG
             // INSERT YOUR FIGMA ACCESS TOKEN
+            Token = "";
             // INSERT THE FILE ID
+            FileId = "";
 #endif
             Log = new ObservableCollection<string>();
             _compiler = new Compiler();
