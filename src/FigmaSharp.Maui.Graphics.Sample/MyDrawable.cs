@@ -28,6 +28,6 @@ public class MyDrawable : IDrawable
     {
         canvas.SaveState();
         canvas.Translate(_vm.OffsetX, _vm.OffsetY);
-        _vm.CompilationResult?.Draw(canvas, dirtyRect);
+        _vm.SelectedPage.CompilationResult?.Draw(canvas, dirtyRect);
     }
 }
