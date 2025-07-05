@@ -17,14 +17,20 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
         ObservableCollection<string> _log;
 
         readonly Compiler _compiler;
-
+        public IDrawable Drawable { get; set; }
+        public float OffsetX { get; set; }
+        public float OffsetY { get; set; }
+        public CompilationResult CompilationResult { get; set; }
+        
+        public event Action RedrawRequested;
+        public event Action DrawableSet;
         public MainViewModel()
         {
+            Drawable = new MyDrawable(this);
+            DrawableSet?.Invoke();
 #if DEBUG
             // INSERT YOUR FIGMA ACCESS TOKEN
-            Token = "";
             // INSERT THE FILE ID
-            FileId = "";
 #endif
             Log = new ObservableCollection<string>();
             _compiler = new Compiler();
@@ -39,7 +45,6 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
                 OnPropertyChanged();
             }
         }
-
         public string FileId
         {
             get { return _fileId; }
@@ -49,7 +54,6 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
                 OnPropertyChanged();
             }
         }
-
         public bool IsGenerating
         {
             get { return _isGenerating; }
@@ -85,6 +89,7 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
 
         async Task GenerateCodeAsync()
         {
+            DrawableSet?.Invoke();
             try
             {
                 if (string.IsNullOrEmpty(Token))
@@ -165,7 +170,7 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
                 }}", Code);
 
             var compilationResult = await _compiler.CompileAsync(sourceCode);
-
+                CompilationResult = compilationResult;
             if (compilationResult.HasErrors)
             {
                 var compilationMessages = compilationResult.CompilationMessages;
@@ -178,7 +183,10 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
             else
             {
                 Log.Add("Compilation completed successfully.");
+                CompilationResult = compilationResult;
+                RedrawRequested?.Invoke();
             }
+            
         }
 
         async Task Export()
