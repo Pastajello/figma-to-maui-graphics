@@ -106,7 +106,6 @@
                         x:Name="graphicsView">
                         <GraphicsView.GestureRecognizers>
                             <PanGestureRecognizer PanUpdated="OnPanUpdated" />
-                            <PinchGestureRecognizer PinchUpdated="OnPinchUpdated" />
                         </GraphicsView.GestureRecognizers>
                     </GraphicsView>
                 </Grid>

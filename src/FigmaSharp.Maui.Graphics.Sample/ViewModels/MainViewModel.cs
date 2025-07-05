@@ -54,7 +54,6 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
         public ICommand GenerateCommand => new Command(async () => await GenerateCodeAsync());
         public ICommand ExportCommand => new Command(async () => await Export());
         public ICommand ChangeSelectedPageCommand => new Command<FigmaPage>(ChangeSelectedPage);
-        public float Scale { get; set; } = 1;
 
         async void ChangeSelectedPage(FigmaPage page)
         {
