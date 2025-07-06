@@ -46,7 +46,7 @@ namespace FigmaSharp.Services
             return Task.FromResult(AppContext.Current.GetManifestResource(Assembly, file));
         }
 
-        public override Task<string> GetContentById(string file, string id)
+        public override Task<string> GetContentById(string file, string id, int depth)
         {
             throw new NotImplementedException();
         }

@@ -102,6 +102,10 @@
             <Border Grid.Column="1" Style="{StaticResource FigmaBorderStyle}">
                 <Grid RowDefinitions="Auto, *">
                     <Label Style="{StaticResource HeaderTextStyle}" Text="Previewer" />
+                    <Label
+                        HorizontalOptions="End"
+                        Style="{StaticResource HeaderTextStyle}"
+                        Text="{Binding Scale}" />
                     <GraphicsView
                         Drawable="{Binding Drawable}"
                         Grid.Row="1"

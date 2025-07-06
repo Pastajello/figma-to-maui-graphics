@@ -41,9 +41,9 @@ namespace FigmaSharp.Services
             return AppContext.Api.GetContentFileAsync(new FigmaFileQuery(file, Version));
         }
 
-        public override Task<string> GetContentById(string file, string id)
+        public override Task<string> GetContentById(string file, string id, int depth)
         {
-            return AppContext.Api.GetNodeContentAsync(new FigmaNodeQuery(file, id));
+            return AppContext.Api.GetNodeContentAsync(new FigmaNodeQuery(file, id, depth));
 
         }
 

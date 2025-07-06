@@ -30,6 +30,8 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
         [ObservableProperty] private ObservableCollection<string> _log;
         [ObservableProperty] private ObservableCollection<FigmaPage> _pages;
         [ObservableProperty] private FigmaPage _selectedPage;
+        [ObservableProperty] private float _scale = 1;
+        
         private readonly Compiler _compiler;
         private RemoteNodeProvider _remoteNodeProvider;
         private CodeRenderService _codeRenderer;
@@ -40,9 +42,9 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
             DrawableSet?.Invoke();
 #if DEBUG
             // INSERT YOUR FIGMA ACCESS TOKEN
-            Token = "";
+            Token = "figd_zLr8EBkZzRtZZgaakKq8NWVpBQFUanpfYzhhVOR8";
             // INSERT THE FILE ID
-            FileId = "";
+            FileId = "SMnzIUGXtQinadyCN4qfOe";//"SMnzIUGXtQinadyCN4qfOe";
 #endif
             Log = new ObservableCollection<string>();
             _compiler = new Compiler();
@@ -58,7 +60,6 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
         public ICommand GenerateCommand => new Command(async () => await GenerateCodeAsync());
         public ICommand ExportCommand => new Command(async () => await Export());
         public ICommand ChangeSelectedPageCommand => new AsyncRelayCommand<FigmaPage>(ChangeSelectedPage);
-        public float Scale { get; set; } = 1;
 
         async Task ChangeSelectedPage(FigmaPage page)
         {
@@ -69,14 +70,16 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
 
             SelectedPage = null;
 
-            await Task.Delay(1);
-
             if (!page.IsLoaded)
             {
                 IsGenerating = true;
-                await _remoteNodeProvider.LoadAsync(FileId, page.Node.id);
-                page.Node = _codeRenderer.NodeProvider.Nodes[1];
-
+                await Task.Run(async ()=> await _remoteNodeProvider.LoadAsync(FileId, page.Node.id,5));
+                page.Node = _codeRenderer.NodeProvider.Nodes.FirstOrDefault(x=>x.id == page.Node.id);
+                var imagesIThink = _codeRenderer.NodeProvider.Nodes.Where(x => x is RectangleVector);
+                foreach (var images in imagesIThink)
+                {
+                    int i = 5;
+                }
                 await GeneratePageSourceCode(page);
                 page.IsLoaded = true;
                 IsGenerating = false;
@@ -129,7 +132,7 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
                 Log.Add("Code generator initialized successfully.");
 
                 Pages = new ObservableCollection<FigmaPage>(
-                    _codeRenderer.NodeProvider.Nodes.Where(x => x.type == "CANVAS").Select(x => new FigmaPage()
+                    _codeRenderer.NodeProvider.Nodes.Where(x => x.type == "CANVAS" && x.name != "---").Select(x => new FigmaPage()
                     {
                         Name = x.name,
                         Node = x,

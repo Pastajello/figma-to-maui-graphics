@@ -50,9 +50,9 @@ namespace FigmaSharp.Services
         public string File { get; set; }
 
         public Task LoadAsync(string file) => Load(file);
-        public Task LoadAsync(string file, string nodeId) => LoadWithNodeId(file,nodeId);
+        public Task LoadAsync(string file, string nodeId, int depth) => LoadWithNodeId(file,nodeId,depth);
 
-        private async Task LoadWithNodeId(string file, string nodeId)
+        private async Task LoadWithNodeId(string file, string nodeId, int depth)
         {
             this.File = file;
 
@@ -61,7 +61,7 @@ namespace FigmaSharp.Services
             {
                 Nodes.Clear();
 
-                var contentTemplate = await GetContentById(file, nodeId);
+                var contentTemplate = await GetContentById(file, nodeId,depth);
 
                 //parse the json into a model format
                 Response = WebApiHelper.GetFigmaResponseFromFileContent(contentTemplate);
@@ -195,7 +195,7 @@ namespace FigmaSharp.Services
         }
         
         public abstract Task<string> GetContentTemplate(string file);
-        public abstract Task<string> GetContentById(string file, string id);
+        public abstract Task<string> GetContentById(string file, string id,int depth);
 
         public abstract void OnStartImageLinkProcessing(List<ViewNode> imageFigmaNodes);
 

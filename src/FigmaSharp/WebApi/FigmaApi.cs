@@ -43,7 +43,7 @@ namespace FigmaSharp
 		#region Urls
 
 		string GetFigmaPages (string fileId) => string.Format ("https://api.figma.com/v1/files/{0}?geometry=paths&depth=1", fileId);
-		string GetContentByIdUrl (string fileId,string nodeId) => string.Format ("https://api.figma.com/v1/files/{0}?geometry=paths&ids={1}", fileId,nodeId);
+		string GetContentByIdUrl (string fileId,string nodeId, int depth) => string.Format ("https://api.figma.com/v1/files/{0}?geometry=paths&ids={1}&depth={2}", fileId,nodeId,depth);
 		string GetFigmaImageUrl (string fileId, params IImageNodeRequest[] imageIds) => string.Format ("https://api.figma.com/v1/images/{0}?ids={1}", fileId, string.Join (",", imageIds.Select(s => s.ResourceId).ToArray ()));
 		string GetFigmaFileVersionsUrl (string fileId) => string.Format ("{0}/versions", GetFigmaPages (fileId));
 
@@ -53,7 +53,7 @@ namespace FigmaSharp
 		{
 			var result = await GetContentUrlAsync (figmaQuery,
 				(e) => {
-					var queryUrl = GetContentByIdUrl (figmaQuery.FileId,figmaQuery.NodeId);
+					var queryUrl = GetContentByIdUrl (figmaQuery.FileId,figmaQuery.NodeId, figmaQuery.Depth);
 					return queryUrl;
 				}
 			);

@@ -27,10 +27,11 @@ namespace FigmaSharp
     public class FigmaNodeQuery : FigmaApiBaseQuery
     {
         public string NodeId { get; set; }
-        public string Depth { get; set; }
-        public FigmaNodeQuery(string fileId, string nodeId, string personalAccessToken = null) : base(fileId, personalAccessToken)
+        public int Depth { get; set; }
+        public FigmaNodeQuery(string fileId, string nodeId,int depth, string personalAccessToken = null) : base(fileId, personalAccessToken)
         {
             NodeId = nodeId;
+            Depth = depth;
         }
     }
 }
