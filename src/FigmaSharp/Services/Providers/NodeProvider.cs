@@ -84,45 +84,7 @@ namespace FigmaSharp.Services
                     ex);
             }
         }
-
-        public Task<List<FigmaNode>> LoadByIdAsync(string file, string id, FigmaNode selectedPageNode)
-        {
-            var nodes = new List<FigmaNode>();
-            return LoadById(file, id, nodes,selectedPageNode);
-        }
-
-        async Task<List<FigmaNode>> LoadById(string file, string id, List<FigmaNode> nodes, FigmaNode selectedPageNode)
-        {
-            ImageProcessed = false;
-            try
-            {
-                var contentTemplate = await GetContentById(file, id);
-
-                //parse the json into a model format
-                Response = WebApiHelper.GetFigmaResponseFromFileContent(contentTemplate);
-
-                //proceses all the views recursively
-                foreach (var item in Response.document.children)
-                    ProcessNodesRecursively(item, selectedPageNode, nodes);
-
-                return nodes;
-            }
-            catch (System.Net.WebException ex)
-            {
-                if (!AppContext.Current.IsApiConfigured)
-                    LoggingService.LogError($"Cannot connect to Figma server: TOKEN not configured.", ex);
-                else
-                    LoggingService.LogError($"Cannot connect to Figma server: wrong TOKEN?", ex);
-            }
-            catch (Exception ex)
-            {
-                LoggingService.LogError(
-                    $"Error reading remote resources. Ensure you added NewtonSoft nuget or cannot parse the to json?",
-                    ex);
-            }
-            return new List<FigmaNode>();
-        }
-
+   
         public async Task Load(string file)
         {
             this.File = file;
@@ -173,9 +135,6 @@ namespace FigmaSharp.Services
             return FindByPath(fullPath.Split('/'));
         }
 
-        public FigmaNode GetParentNode(FigmaNode node)
-            => Nodes.FirstOrDefault(s => s is IFigmaNodeContainer container && container.children.Any(c => c == node));
-
         /// <summary>
         /// Finds a node using the path of the views, returns null in case of no data
         /// </summary>
@@ -203,11 +162,6 @@ namespace FigmaSharp.Services
             return figmaNode;
         }
 
-        public FigmaNode FindById(string id)
-        {
-            return Nodes.FirstOrDefault(s => s.id == id);
-        }
-
         public FigmaNode FindByName(string name)
         {
             var quotedName = string.Format("\"{0}\"", name);
@@ -220,16 +174,7 @@ namespace FigmaSharp.Services
             return Nodes.FirstOrDefault(s => s.name == name);
         }
 
-        public FigmaNode FindByCustomName(string name)
-        {
-            var found = Nodes.FirstOrDefault(s => s.TryGetNodeCustomName(out var customName) && customName == name);
-            if (found != null)
-            {
-                return found;
-            }
 
-            return Nodes.FirstOrDefault(s => s.name == name);
-        }
 
         void ProcessNodeRecursively(FigmaNode node, FigmaNode parent)
         {
@@ -249,24 +194,6 @@ namespace FigmaSharp.Services
             }
         }
         
-        void ProcessNodesRecursively(FigmaNode node, FigmaNode parent, List<FigmaNode> nodes)
-        {
-            node.Parent = parent;
-            Nodes.Add(node);
-
-            if (node is FigmaInstance instance)
-            {
-                if (Response.components.TryGetValue(instance.componentId, out var figmaComponent))
-                    instance.Component = figmaComponent;
-            }
-
-            if (node is IFigmaNodeContainer nodeContainer)
-            {
-                foreach (var item in nodeContainer.children)
-                    ProcessNodesRecursively(item, node,nodes);
-            }
-        }
-
         public abstract Task<string> GetContentTemplate(string file);
         public abstract Task<string> GetContentById(string file, string id);
 

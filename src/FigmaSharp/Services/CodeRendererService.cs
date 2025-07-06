@@ -229,18 +229,6 @@ namespace FigmaSharp.Services
             return !((node != null && node == MainNode) || node.Node is FigmaCanvas || node.Node.Parent is FigmaCanvas);
         }
 
-        public bool NodeRendersVar(CodeNode currentNode, CodeNode parentNode)
-        {
-            if (currentNode.Node.GetNodeTypeName() == "mastercontent")
-            {
-                return false;
-            }
-
-            return !currentNode.Node.TryGetNodeCustomName(out var _);
-        }
-
-    
-
         const string init = "Figma";
         const string end = "Converter";
         const string ViewIdentifier = "View";
