@@ -25,7 +25,6 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-
 using FigmaSharp.Converters;
 using FigmaSharp.Models;
 using FigmaSharp.PropertyConfigure;
@@ -33,311 +32,293 @@ using FigmaSharp.PropertyConfigure;
 namespace FigmaSharp.Services
 {
     public interface ICodeRenderService
-	{
-		CodeRenderServiceOptions Options { get; }
-		void Clear();
-		void GetCode(StringBuilder builder, CodeNode node, CodeNode parent = null, CodeRenderServiceOptions currentRendererOptions = null, ITranslationService translateService = null);
-		bool NodeRendersVar(CodeNode currentNode, CodeNode parentNode);
-		bool NeedsRenderConstructor(CodeNode node, CodeNode parent);
-		string GetTranslatedText(FigmaText text);
-		string GetTranslatedText(string text, bool textCondition = true);
-		INodeProvider NodeProvider { get; }
-	}
+    {
+        CodeRenderServiceOptions Options { get; }
+        string GetTranslatedText(string text, bool textCondition = true);
+    }
 
-	public class CodeRenderService : RenderService, ICodeRenderService
-	{
-		internal const string DefaultViewName = "view";
+    public class CodeRenderService : RenderService, ICodeRenderService
+    {
+        internal const string DefaultViewName = "view";
 
-		internal CodePropertyConfigureBase codePropertyConverter;
+        internal CodePropertyConfigureBase codePropertyConverter;
 
-		public CodeRenderService (INodeProvider figmaProvider, NodeConverter[] nodeConverters,
-			CodePropertyConfigureBase codePropertyConverter, ITranslationService translationService = null) : base (figmaProvider, nodeConverters, translationService)
-		{
-			this.codePropertyConverter = codePropertyConverter;
-		}
-
-		NodeConverter GetConverter (CodeNode node, List<NodeConverter> converters)
-		{
-			foreach (var customViewConverter in converters) {
-				if (customViewConverter.CanCodeConvert (node.Node)) {
-					return customViewConverter;
-				}
-			}
-			return null;
-		}
-
-		public CodeRenderServiceOptions Options
-		{
-			get => (CodeRenderServiceOptions)baseOptions;
-			internal set => baseOptions = value;
-		}
-
-		internal CodeNode ParentMainNode { get; set; }
-		internal CodeNode MainNode { get; set; }
-
-		public bool IsMainNode (FigmaNode figmaNode) => MainNode != null && figmaNode == MainNode?.Node;
-
-		readonly internal List<CodeNode> Nodes = new List<CodeNode>();
-
-		public virtual void Clear ()
-		{
-			SetOptions(null);
-			ParentMainNode = null;
-			MainNode = null;
-		}
-
-		public void GetCode (StringBuilder builder, CodeNode node, CodeNode parent = null, CodeRenderServiceOptions currentRendererOptions = null, ITranslationService translateService = null)
-		{
-			//in first level we clear all identifiers
-			if (parent == null) {
-				if (MainNode == null) {
-
-					//clear all nodes
-					Nodes.Clear();
-
-					identifiers.Clear ();
-					OnStartGetCode ();
-
-					//we initialize
-
-					SetOptions(currentRendererOptions ?? new CodeRenderServiceOptions());
-
-					TranslationService = translateService ?? TranslationService ?? new DefaultTranslationService();
-
-					//we store our main node
-					MainNode = node;
-					ParentMainNode = parent;
-				}
-			}
-
-			if (node != null)
-				Nodes.Add(node);
-
-			CodeNode calculatedParentNode = null;
-			NodeConverter converter = null;
-
-			var isNodeSkipped = IsNodeSkipped (node);
-
-			//on node skipped we don't render
-			if (!isNodeSkipped) {
-				//if (figmaProvider.RendersProperties (node)) {
-				converter = GetNodeConverter(node);
-
-				if (converter != null) {
-					if (!node.HasName) {
-
-						if (!TryGetCodeViewName (node, parent, converter, out string identifier)) {
-							identifier = DefaultViewName;
-						}
-
-						//we store our name to don't generate dupplicates
-						var lastIndex = GetLastInsertedIndex (identifier);
-						if (lastIndex >= 0) {
-							identifiers.Remove (identifier);
-						}
-						lastIndex++;
-
-						node.Name = identifier;
-						if (lastIndex > 0) {
-							node.Name += lastIndex;
-						}
-						identifiers.Add (identifier, lastIndex);
-					}
-
-					if (Options.ShowComments)
-                    {
-						builder.AppendLine();
-						builder.AppendLine($"// View:     {node.Name}");
-						builder.AppendLine($"// NodeName: {node.Node.name}");
-						builder.AppendLine($"// NodeType: {node.Node.type}");
-						builder.AppendLine($"// NodeId:   {node.Node.id}");
-					}
-
-					OnPreConvertToCode (builder, node, parent, converter, codePropertyConverter);
-					//we generate our code and replace node name
-
-					var code = converter.ConvertToCode (node, parent, this);
-					builder.AppendLineIfValue (code.Replace (Resources.Ids.Conversion.NameIdentifier, node.Name));
-					OnPostConvertToCode (builder, node, parent, converter, codePropertyConverter);
-
-					//TODO: this could be removed to converters base
-					if (Options.ShowAddChild && RendersAddChild(node, parent, this))
-					{
-						builder.AppendLineIfValue(codePropertyConverter.ConvertToCode(PropertyNames.AddChild, node, parent, converter, this));
-						OnChildAdded(builder, node, parent, converter, codePropertyConverter);
-					}
-
-					if (Options.ShowSize && RendersSize(node, parent, this))
-                    {
-						builder.AppendLineIfValue(codePropertyConverter.ConvertToCode(PropertyNames.Frame, node, parent, converter, this));
-						OnFrameSet(builder, node, parent, converter, codePropertyConverter);
-					}
-
-					if (Options.ShowConstraints && RendersConstraints(node, parent, this))
-					{
-						builder.AppendLineIfValue(codePropertyConverter.ConvertToCode(PropertyNames.Constraints, node, parent, converter, this));
-					}
-
-					calculatedParentNode = node;
-				} else {
-					//without a converter we don't have any view created, we need to attach to the parent view
-					calculatedParentNode = parent;
-				}
-			}
-			else
-			{
-				//if a node is skipped because is the first node we want to set as parent view
-				if (node == MainNode)
-				{
-					calculatedParentNode = node;
-				}
-			}
-
-			//without converter we scan the children automatically
-			var navigateChild = Options.ScanChildren && (converter?.ScanChildren (node.Node) ?? true);
-			if (navigateChild && HasChildrenToRender (node)) {
-				foreach (var item in GetChildrenToRender (node)) {
-					var figmaNode = new CodeNode(item, parent: node);
-					GetCode (builder, figmaNode, calculatedParentNode);
-				}
-			}
-
-			if (MainNode == node) {
-				//first loop
-				Clear ();
-			}
-		}
-
-        public NodeConverter GetNodeConverter (CodeNode node)
+        public CodeRenderService(INodeProvider figmaProvider, NodeConverter[] nodeConverters,
+            CodePropertyConfigureBase codePropertyConverter, ITranslationService translationService = null) : base(
+            figmaProvider, nodeConverters, translationService)
         {
-			var converter = GetConverter(node, CustomConverters);
-			if (converter == null)
-				converter = GetConverter(node, DefaultConverters);
-			return converter;
-		}
-
-        protected virtual bool RendersConstraints(CodeNode node, CodeNode parent, CodeRenderService figmaCodeRendererService)
-        {
-			return !((node != null && node == MainNode) || node.Node is FigmaCanvas || node.Node.Parent is FigmaCanvas);
-		}
-
-		protected virtual bool RendersSize(CodeNode node, CodeNode parent, CodeRenderService figmaCodeRendererService)
-        {
-			return true;
-		}
-
-		protected virtual bool RendersAddChild(CodeNode node, CodeNode parent, CodeRenderService figmaCodeRendererService)
-        {
-			return true;
+            this.codePropertyConverter = codePropertyConverter;
         }
 
-        protected virtual void OnStartGetCode ()
-		{
-
-		}
-
-		protected virtual void OnPreConvertToCode (StringBuilder builder, CodeNode node, CodeNode parent, NodeConverter converter, CodePropertyConfigureBase codePropertyConverter)
-		{
-			
-		}
-
-        public bool NodeRendersVar (CodeNode currentNode, CodeNode parentNode)
+        NodeConverter GetConverter(CodeNode node, List<NodeConverter> converters)
         {
-			if (currentNode.Node.GetNodeTypeName () == "mastercontent") {
-				return false;
+            foreach (var customViewConverter in converters)
+            {
+                if (customViewConverter.CanCodeConvert(node.Node))
+                {
+                    return customViewConverter;
+                }
             }
 
-			return !currentNode.Node.TryGetNodeCustomName(out var _);
+            return null;
+        }
 
-		}
+        public CodeRenderServiceOptions Options
+        {
+            get => (CodeRenderServiceOptions)baseOptions;
+            internal set => baseOptions = value;
+        }
 
-        protected virtual void OnPostConvertToCode (StringBuilder builder, CodeNode node, CodeNode parent, NodeConverter converter, CodePropertyConfigureBase codePropertyConverter)
-		{
+        internal CodeNode ParentMainNode { get; set; }
+        internal CodeNode MainNode { get; set; }
 
-		}
+        public bool IsMainNode(FigmaNode figmaNode) => MainNode != null && figmaNode == MainNode?.Node;
 
-		protected virtual void OnChildAdded (StringBuilder builder, CodeNode node, CodeNode parent, NodeConverter converter, CodePropertyConfigureBase codePropertyConverter)
-		{
+        readonly internal List<CodeNode> Nodes = new List<CodeNode>();
 
-		}
+        public virtual void Clear()
+        {
+            SetOptions(null);
+            ParentMainNode = null;
+            MainNode = null;
+        }
 
-		protected virtual void OnFrameSet (StringBuilder builder, CodeNode node, CodeNode parent, NodeConverter converter, CodePropertyConfigureBase codePropertyConverter)
-		{
+        public void GetCode(StringBuilder builder, CodeNode node, CodeNode parent = null,
+            CodeRenderServiceOptions currentRendererOptions = null, ITranslationService translateService = null)
+        {
+            //in first level we clear all identifiers
+            if (parent == null)
+            {
+                if (MainNode == null)
+                {
+                    //clear all nodes
+                    Nodes.Clear();
 
-		}
+                    identifiers.Clear();
 
-		const string init = "Figma";
-		const string end = "Converter";
-		const string ViewIdentifier = "View";
+                    //we initialize
 
-		protected virtual bool TryGetCodeViewName (CodeNode node, CodeNode parent, NodeConverter converter, out string identifier)
-		{
-			try {
-				identifier = converter.GetType().Name;
-				if (identifier.StartsWith (init)) {
-					identifier = identifier.Substring (init.Length);
-				}
+                    SetOptions(currentRendererOptions ?? new CodeRenderServiceOptions());
 
-				if (identifier.EndsWith (end)) {
-					identifier = identifier.Substring (0, identifier.Length - end.Length);
-				}
+                    TranslationService = translateService ?? TranslationService ?? new DefaultTranslationService();
 
-				identifier = char.ToLower (identifier[0]) + identifier.Substring (1) + ViewIdentifier;
+                    //we store our main node
+                    MainNode = node;
+                    ParentMainNode = parent;
+                }
+            }
 
-				return true;
-			} catch (Exception) {
-				identifier = null;
-				return false;
-			}
-		}
+            if (node != null)
+                Nodes.Add(node);
 
-		internal int GetLastInsertedIndex (string identifier)
-		{
-			if (!identifiers.TryGetValue (identifier, out int data)) {
-				return -1;
-			}
-			return data;
-		}
+            CodeNode calculatedParentNode = null;
+            NodeConverter converter = null;
 
-		#region Rendering Iteration
+            var isNodeSkipped = IsNodeSkipped(node);
 
-		public virtual bool NeedsRenderConstructor (CodeNode node, CodeNode parent)
-		{
-			if (parent != null
-				&& IsMainNode (parent.Node)
-				&& (Options?.RendersConstructorFirstElement ?? false)
-				)
-				return false;
-			else {
-				return true;
-			}
-		}
+            //on node skipped we don't render
+            if (!isNodeSkipped)
+            {
+                //if (figmaProvider.RendersProperties (node)) {
+                converter = GetNodeConverter(node);
 
-		internal virtual bool IsMainViewContainer (CodeNode node)
-		{
-			return true;
-		}
+                if (converter != null)
+                {
+                    if (!node.HasName)
+                    {
+                        if (!TryGetCodeViewName(node, parent, converter, out string identifier))
+                        {
+                            identifier = DefaultViewName;
+                        }
 
-		internal virtual FigmaNode[] GetChildrenToRender (CodeNode node)
-		{
-			if (node.Node is IFigmaNodeContainer nodeContainer) {
-				return nodeContainer.children;
-			}
-			return new FigmaNode[0];
-		}
+                        //we store our name to don't generate dupplicates
+                        var lastIndex = GetLastInsertedIndex(identifier);
+                        if (lastIndex >= 0)
+                        {
+                            identifiers.Remove(identifier);
+                        }
 
-		internal virtual bool HasChildrenToRender (CodeNode node)
-		{
-			return node.Node is IFigmaNodeContainer;
-		}
+                        lastIndex++;
 
-		internal virtual bool IsNodeSkipped (CodeNode node)
-		{
-			return false;
-		}
+                        node.Name = identifier;
+                        if (lastIndex > 0)
+                        {
+                            node.Name += lastIndex;
+                        }
 
-		#endregion
+                        identifiers.Add(identifier, lastIndex);
+                    }
 
-		Dictionary<string, int> identifiers = new Dictionary<string, int> ();
-	}
+                    if (Options.ShowComments)
+                    {
+                        builder.AppendLine();
+                        builder.AppendLine($"// View:     {node.Name}");
+                        builder.AppendLine($"// NodeName: {node.Node.name}");
+                        builder.AppendLine($"// NodeType: {node.Node.type}");
+                        builder.AppendLine($"// NodeId:   {node.Node.id}");
+                    }
+
+                    var code = converter.ConvertToCode(node, parent, this);
+                    builder.AppendLineIfValue(code.Replace(Resources.Ids.Conversion.NameIdentifier, node.Name));
+
+                    //TODO: this could be removed to converters base
+                    if (Options.ShowAddChild)
+                    {
+                        builder.AppendLineIfValue(codePropertyConverter.ConvertToCode(PropertyNames.AddChild, node,
+                            parent, converter, this));
+                    }
+
+                    if (Options.ShowSize)
+                    {
+                        builder.AppendLineIfValue(codePropertyConverter.ConvertToCode(PropertyNames.Frame, node, parent,
+                            converter, this));
+                    }
+
+                    if (Options.ShowConstraints && RendersConstraints(node, parent, this))
+                    {
+                        builder.AppendLineIfValue(codePropertyConverter.ConvertToCode(PropertyNames.Constraints, node,
+                            parent, converter, this));
+                    }
+
+                    calculatedParentNode = node;
+                }
+                else
+                {
+                    //without a converter we don't have any view created, we need to attach to the parent view
+                    calculatedParentNode = parent;
+                }
+            }
+            else
+            {
+                //if a node is skipped because is the first node we want to set as parent view
+                if (node == MainNode)
+                {
+                    calculatedParentNode = node;
+                }
+            }
+
+            //without converter we scan the children automatically
+            var navigateChild = Options.ScanChildren && (converter?.ScanChildren(node.Node) ?? true);
+            if (navigateChild && HasChildrenToRender(node))
+            {
+                foreach (var item in GetChildrenToRender(node))
+                {
+                    var figmaNode = new CodeNode(item, parent: node);
+                    GetCode(builder, figmaNode, calculatedParentNode);
+                }
+            }
+
+            if (MainNode == node)
+            {
+                //first loop
+                Clear();
+            }
+        }
+
+        public NodeConverter GetNodeConverter(CodeNode node)
+        {
+            var converter = GetConverter(node, CustomConverters);
+            if (converter == null)
+                converter = GetConverter(node, DefaultConverters);
+            return converter;
+        }
+
+        protected virtual bool RendersConstraints(CodeNode node, CodeNode parent,
+            CodeRenderService figmaCodeRendererService)
+        {
+            return !((node != null && node == MainNode) || node.Node is FigmaCanvas || node.Node.Parent is FigmaCanvas);
+        }
+
+        public bool NodeRendersVar(CodeNode currentNode, CodeNode parentNode)
+        {
+            if (currentNode.Node.GetNodeTypeName() == "mastercontent")
+            {
+                return false;
+            }
+
+            return !currentNode.Node.TryGetNodeCustomName(out var _);
+        }
+
+    
+
+        const string init = "Figma";
+        const string end = "Converter";
+        const string ViewIdentifier = "View";
+
+        protected virtual bool TryGetCodeViewName(CodeNode node, CodeNode parent, NodeConverter converter,
+            out string identifier)
+        {
+            try
+            {
+                identifier = converter.GetType().Name;
+                if (identifier.StartsWith(init))
+                {
+                    identifier = identifier.Substring(init.Length);
+                }
+
+                if (identifier.EndsWith(end))
+                {
+                    identifier = identifier.Substring(0, identifier.Length - end.Length);
+                }
+
+                identifier = char.ToLower(identifier[0]) + identifier.Substring(1) + ViewIdentifier;
+
+                return true;
+            }
+            catch (Exception)
+            {
+                identifier = null;
+                return false;
+            }
+        }
+
+        internal int GetLastInsertedIndex(string identifier)
+        {
+            if (!identifiers.TryGetValue(identifier, out int data))
+            {
+                return -1;
+            }
+
+            return data;
+        }
+
+        #region Rendering Iteration
+
+        public virtual bool NeedsRenderConstructor(CodeNode node, CodeNode parent)
+        {
+            if (parent != null
+                && IsMainNode(parent.Node)
+                && (Options?.RendersConstructorFirstElement ?? false)
+               )
+                return false;
+            else
+            {
+                return true;
+            }
+        }
+
+        internal virtual FigmaNode[] GetChildrenToRender(CodeNode node)
+        {
+            if (node.Node is IFigmaNodeContainer nodeContainer)
+            {
+                return nodeContainer.children;
+            }
+
+            return new FigmaNode[0];
+        }
+
+        internal virtual bool HasChildrenToRender(CodeNode node)
+        {
+            return node.Node is IFigmaNodeContainer;
+        }
+
+        internal virtual bool IsNodeSkipped(CodeNode node)
+        {
+            return false;
+        }
+
+        #endregion
+
+        Dictionary<string, int> identifiers = new Dictionary<string, int>();
+    }
 }

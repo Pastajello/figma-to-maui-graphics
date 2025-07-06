@@ -42,17 +42,29 @@ namespace FigmaSharp
 
 		#region Urls
 
-		string GetFigmaFileUrl (string fileId) => string.Format ("https://api.figma.com/v1/files/{0}", fileId);
+		string GetFigmaPages (string fileId) => string.Format ("https://api.figma.com/v1/files/{0}?geometry=paths&depth=1", fileId);
+		string GetContentByIdUrl (string fileId,string nodeId) => string.Format ("https://api.figma.com/v1/files/{0}?geometry=paths&ids={1}", fileId,nodeId);
 		string GetFigmaImageUrl (string fileId, params IImageNodeRequest[] imageIds) => string.Format ("https://api.figma.com/v1/images/{0}?ids={1}", fileId, string.Join (",", imageIds.Select(s => s.ResourceId).ToArray ()));
-		string GetFigmaFileVersionsUrl (string fileId) => string.Format ("{0}/versions", GetFigmaFileUrl (fileId));
+		string GetFigmaFileVersionsUrl (string fileId) => string.Format ("{0}/versions", GetFigmaPages (fileId));
 
 		#endregion
+		
+		public async Task<string> GetNodeContentAsync (FigmaNodeQuery figmaQuery)
+		{
+			var result = await GetContentUrlAsync (figmaQuery,
+				(e) => {
+					var queryUrl = GetContentByIdUrl (figmaQuery.FileId,figmaQuery.NodeId);
+					return queryUrl;
+				}
+			);
+			return result;
+		}
 
 		public async Task<string> GetContentFileAsync (FigmaFileQuery figmaQuery)
 		{
 			var result = await GetContentUrlAsync (figmaQuery,
 				(e) => {
-					var queryUrl = GetFigmaFileUrl (figmaQuery.FileId);
+					var queryUrl = GetFigmaPages (figmaQuery.FileId);
 					if (e.Version != null) {
 						queryUrl += string.Format ("?version={0}", figmaQuery.Version);
 					}
@@ -134,7 +146,8 @@ namespace FigmaSharp
 			client.DefaultRequestHeaders.Add ("Accept", "application/json");
             client.DefaultRequestHeaders.Add("x-figma-token", token);
 
-			var response = await client.GetAsync(query + "?geometry=paths");
+            var finalquery = query;
+			var response = await client.GetAsync(finalquery);
 			var content = await response.Content.ReadAsStringAsync();
 		
 			var json = Newtonsoft.Json.Linq.JObject.Parse(content);

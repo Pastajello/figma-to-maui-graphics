@@ -22,40 +22,15 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 // USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-
-using FigmaSharp.Models;
-
-namespace FigmaSharp.Services
+namespace FigmaSharp
 {
-    public interface INodeProvider
+    public class FigmaNodeQuery : FigmaApiBaseQuery
     {
-        string File { get; }
-        event EventHandler ImageLinksProcessed;
-        List<FigmaNode> Nodes { get; }
-        FigmaFileResponse Response { get; }
-
-        Task<string> GetContentTemplate(string file);
-
-        Task LoadAsync(string file);
-        Task Load(string file);
-        void Save(string filePath);
-        void OnStartImageLinkProcessing(List<ViewNode> imageVectors);
-
-        FigmaNode[] GetMainGeneratedLayers();
-
-        FigmaNode FindByFullPath(string fullPath);
-        FigmaNode FindByPath(params string[] path);
-        FigmaNode FindByName(string nodeName);
-
-        bool TryGetMainInstance (FigmaInstance figmaInstance, out FigmaInstance outInstance);
-        bool TryGetMainComponent (FigmaInstance figmaInstance, out FigmaComponentEntity outInstance);
-        bool TryGetStyle(string fillStyleValue, out FigmaStyle style);
-
-        bool RendersAsImage(FigmaNode figmaNode);
-        void SaveResourceFiles(string destinationDirectory, string format, IImageNodeRequest[] downloadImages);
+        public string NodeId { get; set; }
+        public string Depth { get; set; }
+        public FigmaNodeQuery(string fileId, string nodeId, string personalAccessToken = null) : base(fileId, personalAccessToken)
+        {
+            NodeId = nodeId;
+        }
     }
 }
- 

@@ -25,7 +25,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-
+using System.Threading.Tasks;
 using FigmaSharp.Helpers;
 using FigmaSharp.Views;
 
@@ -38,9 +38,14 @@ namespace FigmaSharp.Services
             ResourcesDirectory = resourcesDirectory;
         }
 
-        public override string GetContentTemplate(string file)
+        public override Task<string> GetContentTemplate(string file)
         {
-            return System.IO.File.ReadAllText(file);
+            return System.IO.File.ReadAllTextAsync(file);
+        }
+
+        public override Task<string> GetContentById(string file, string id)
+        {
+            throw new NotImplementedException();
         }
 
         public string ResourcesDirectory { get; set; }

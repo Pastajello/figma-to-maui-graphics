@@ -24,7 +24,6 @@
 		<Folder Include="PropertyConfigure\" />
 		<Folder Include="FigmaFile\" />
 		<Folder Include="WebApi\" />
-		<Folder Include="WebApi\Query\" />
 		<Folder Include="FigmaPackage\" />
 		<Folder Include="WebApi\Response\" />
 		<Folder Include="WebApi\Models\" />

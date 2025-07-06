@@ -81,7 +81,10 @@
                                         <Grid.GestureRecognizers>
                                             <TapGestureRecognizer Command="{Binding BindingContext.ChangeSelectedPageCommand, Source={x:Reference root}}" CommandParameter="{Binding}" />
                                         </Grid.GestureRecognizers>
-                                        <RadioButton IsChecked="{Binding IsSelected}" VerticalOptions="Center" />
+                                        <CheckBox
+                                            InputTransparent="True"
+                                            IsChecked="{Binding IsSelected}"
+                                            VerticalOptions="Center" />
                                         <Label
                                             FontSize="16"
                                             Grid.Column="1"

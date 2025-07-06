@@ -36,9 +36,15 @@ namespace FigmaSharp.Services
     {
         public FigmaFileVersion Version { get; set; }
 
-        public override string GetContentTemplate(string file)
+        public override Task<string> GetContentTemplate(string file)
         {
-            return AppContext.Api.GetContentFileAsync(new FigmaFileQuery(file, Version)).GetAwaiter().GetResult();
+            return AppContext.Api.GetContentFileAsync(new FigmaFileQuery(file, Version));
+        }
+
+        public override Task<string> GetContentById(string file, string id)
+        {
+            return AppContext.Api.GetNodeContentAsync(new FigmaNodeQuery(file, id));
+
         }
 
         public IEnumerable<string> GetKeys(List<FigmaImageResponse> responses, string image)
