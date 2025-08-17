@@ -24,70 +24,86 @@
 
 using System;
 using System.Collections.Generic;
-
+using System.Globalization;
+using System.Text;
 using FigmaSharp.Models;
 using FigmaSharp.Services;
 using FigmaSharp.Views;
 
 namespace FigmaSharp.Converters
 {
-	public abstract class NodeConverter 
-	{
-		public abstract Type GetControlType (FigmaNode currentNode);
+    public abstract class NodeConverter
+    {
+        public abstract Type GetControlType(FigmaNode currentNode);
 
-		public virtual bool IsLayer { get; }
+        public virtual bool IsLayer { get; }
 
         public virtual string Name { get; } = CodeRenderService.DefaultViewName;
 
-        public virtual bool ScanChildren (FigmaNode currentNode)
+        public virtual bool ScanChildren(FigmaNode currentNode)
         {
             return true;
             //return !(currentNode is FigmaInstance);
         }
 
-        protected T ToEnum<T> (string value)
-		{
-			try {
-				foreach (T suit in (T[])Enum.GetValues (typeof (T))) {
-					if (suit.ToString ().ToLower ().Equals (value, StringComparison.InvariantCultureIgnoreCase)) {
-						return suit;
-					}
-				}
-			} catch (System.Exception ex) {
-				LoggingService.LogError("[FIGMA] Error", ex);
-
-			}
-			return default (T);
-		}
-
-		protected Dictionary<string, string> GetKeyValues (FigmaNode currentNode)
+        protected T ToEnum<T>(string value)
         {
-            Dictionary<string, string> ids = new Dictionary<string, string>();
-			var index = currentNode.name.IndexOf ($"type:", System.StringComparison.InvariantCultureIgnoreCase);
-			if (index > -1) {
-				var properties = currentNode.name.Split (' ');
-				foreach (var property in properties) {
-					var data = property.Split (':');
-					if (data.Length != 2) {
-						LoggingService.LogError ($"Error format in parameter: '{property}'");
-						continue;
-					}
-					ids.Add (data[0], data[1]);
-				}
-			} else {
-				ids.Add ("type", currentNode.name);
-			}
-			return ids;
+            try
+            {
+                foreach (T suit in (T[])Enum.GetValues(typeof(T)))
+                {
+                    if (suit.ToString().ToLower().Equals(value, StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        return suit;
+                    }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                LoggingService.LogError("[FIGMA] Error", ex);
+            }
+
+            return default(T);
         }
 
-		string RemoveQuotes(string data, bool enable = false)
-		{
+        protected Dictionary<string, string> GetKeyValues(FigmaNode currentNode)
+        {
+            Dictionary<string, string> ids = new Dictionary<string, string>();
+            var index = currentNode.name.IndexOf($"type:", System.StringComparison.InvariantCultureIgnoreCase);
+            if (index > -1)
+            {
+                var properties = currentNode.name.Split(' ');
+                foreach (var property in properties)
+                {
+                    var data = property.Split(':');
+                    if (data.Length != 2)
+                    {
+                        LoggingService.LogError($"Error format in parameter: '{property}'");
+                        continue;
+                    }
+
+                    ids.Add(data[0], data[1]);
+                }
+            }
+            else
+            {
+                ids.Add("type", currentNode.name);
+            }
+
+            return ids;
+        }
+
+        string RemoveQuotes(string data, bool enable = false)
+        {
             if (enable)
-            return data.Replace("\"", "");
+            {
+                return data.Replace("\"", "");
+            }
+
             return data;
         }
 
-        protected string GetIdentifierValue (string data, string parameter, bool removeQuotes = false)
+        protected string GetIdentifierValue(string data, string parameter, bool removeQuotes = false)
         {
             var index = data.IndexOf($"{parameter}:", System.StringComparison.InvariantCultureIgnoreCase);
             if (index > -1)
@@ -96,13 +112,14 @@ namespace FigmaSharp.Converters
                 var endIndex = delta.IndexOf(" ", System.StringComparison.InvariantCultureIgnoreCase);
 
                 if (endIndex == -1)
-                    return RemoveQuotes (delta, removeQuotes);
-                return RemoveQuotes (delta.Substring(0, endIndex), removeQuotes);
+                    return RemoveQuotes(delta, removeQuotes);
+                return RemoveQuotes(delta.Substring(0, endIndex), removeQuotes);
             }
-			return null;
+
+            return null;
         }
 
-        internal virtual bool HasWidthConstraint ()
+        internal virtual bool HasWidthConstraint()
         {
             return true;
         }
@@ -126,18 +143,36 @@ namespace FigmaSharp.Converters
             return false;
         }
 
-        protected bool ContainsType (FigmaNode currentNode, string name)
+        protected bool ContainsType(FigmaNode currentNode, string name)
         {
-			var identifier = GetIdentifierValue (currentNode.name, "type") ?? currentNode.name;
-			return identifier == name;
-		}
+            var identifier = GetIdentifierValue(currentNode.name, "type") ?? currentNode.name;
+            return identifier == name;
+        }
 
-        public abstract bool CanConvert (FigmaNode currentNode);
+        public abstract bool CanConvert(FigmaNode currentNode);
 
         public virtual bool CanCodeConvert(FigmaNode currentNode) => CanConvert(currentNode);
 
-        public abstract IView ConvertToView (FigmaNode currentNode, ViewNode parent, ViewRenderService rendererService);
+        public abstract IView ConvertToView(FigmaNode currentNode, ViewNode parent, ViewRenderService rendererService);
 
-        public abstract string ConvertToCode (CodeNode currentNode, CodeNode parentNode, ICodeRenderService rendererService);
+        public abstract string ConvertToCode(CodeNode currentNode, CodeNode parentNode,
+            ICodeRenderService rendererService);
+
+        public void HandleImageRef(StringBuilder sb, Rectangle bounds, string imageId)
+        {
+            NumberFormatInfo nfi = new NumberFormatInfo
+            {
+                NumberDecimalSeparator = "."
+            };
+            var imageName = $"image_{imageId.Replace(":", "_").Replace(";", "_")}";
+            sb.AppendLine($"IImage {imageName} = null;");
+            sb.AppendLine($"if ({imageName} == null)");
+            sb.AppendLine($"{{");
+            sb.AppendLine($"   using var stream = System.IO.File.OpenRead(\"images/{imageName}.png\");");
+            sb.AppendLine($"   {imageName} = PlatformImage.FromStream(stream);");
+            sb.AppendLine($"}}");
+            sb.AppendLine(
+                $"canvas.DrawImage({imageName},{bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f);");
+        }
     }
 }

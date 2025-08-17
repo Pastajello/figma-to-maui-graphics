@@ -15,13 +15,14 @@ namespace FigmaSharp.Maui.Graphics.Converters
         public override bool CanConvert(FigmaNode currentNode)
             => currentNode.GetType() == typeof(FigmaVector);
 
-        public override string ConvertToCode(CodeNode currentNode, CodeNode parentNode, ICodeRenderService rendererService)
+        public override string ConvertToCode(CodeNode currentNode, CodeNode parentNode,
+            ICodeRenderService rendererService)
         {
             if (currentNode.Node is not FigmaVector figmaVector)
             {
                 return string.Empty;
             }
-            
+
             if (figmaVector.fillGeometry == null || figmaVector.fillGeometry.Length == 0)
             {
                 return string.Empty;
@@ -54,23 +55,15 @@ namespace FigmaSharp.Maui.Graphics.Converters
                     if (backgroundPaint.gradientStops != null)
                     {
                         if (backgroundPaint.type.Equals("GRADIENT_LINEAR", StringComparison.CurrentCultureIgnoreCase))
-                            builder.AppendLine($"canvas.SetFillPaint({backgroundPaint.gradientStops.ToLinearGradientPaint()}, new RectF({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f));");
+                            builder.AppendLine(
+                                $"canvas.SetFillPaint({backgroundPaint.gradientStops.ToLinearGradientPaint()}, new RectF({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f));");
 
                         if (backgroundPaint.type.Equals("GRADIENT_RADIAL", StringComparison.CurrentCultureIgnoreCase))
-                            builder.AppendLine($"canvas.SetFillPaint({backgroundPaint.gradientStops.ToRadialGradientPaint()}, new RectF({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f));");
+                            builder.AppendLine(
+                                $"canvas.SetFillPaint({backgroundPaint.gradientStops.ToRadialGradientPaint()}, new RectF({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f));");
                     }
 
-                    if (backgroundPaint.imageRef != null)
-                    {
-                        var imageName = $"image_{backgroundPaint.ID.Replace(":","_")}";
-                        builder.AppendLine($"IImage {imageName} = null;");
-                        builder.AppendLine($"if ({imageName} == null)");
-                        builder.AppendLine($"{{");
-                        builder.AppendLine($"   using var stream = System.IO.File.OpenRead(\"images/{imageName}.png\");");
-                        builder.AppendLine($"   {imageName} = PlatformImage.FromStream(stream);");
-                        builder.AppendLine($"}}");
-                        builder.AppendLine($"canvas.DrawImage({imageName},{bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f);");
-                    }
+                  
 
                     foreach (var geometry in figmaVector.fillGeometry)
                     {
@@ -83,6 +76,11 @@ namespace FigmaSharp.Maui.Graphics.Converters
                         builder.AppendLine($"canvas.FillPath({name}path);");
 
                         _figmaVectorCount++;
+                    }
+                    
+                    if (backgroundPaint.imageRef != null)
+                    {
+                        HandleImageRef(builder, bounds, figmaVector.id);
                     }
                 }
             }
@@ -103,10 +101,12 @@ namespace FigmaSharp.Maui.Graphics.Converters
                     if (strokePaint.gradientStops != null)
                     {
                         if (strokePaint.type.Equals("GRADIENT_LINEAR", StringComparison.CurrentCultureIgnoreCase))
-                            builder.AppendLine($"canvas.SetFillPaint({strokePaint.gradientStops.ToLinearGradientPaint()}, new RectF({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f));");
+                            builder.AppendLine(
+                                $"canvas.SetFillPaint({strokePaint.gradientStops.ToLinearGradientPaint()}, new RectF({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f));");
 
                         if (strokePaint.type.Equals("GRADIENT_RADIAL", StringComparison.CurrentCultureIgnoreCase))
-                            builder.AppendLine($"canvas.SetFillPaint({strokePaint.gradientStops.ToRadialGradientPaint()}, new RectF({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f));");
+                            builder.AppendLine(
+                                $"canvas.SetFillPaint({strokePaint.gradientStops.ToRadialGradientPaint()}, new RectF({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f));");
                     }
 
                     if (strokePaint.imageRef != null)
@@ -118,7 +118,8 @@ namespace FigmaSharp.Maui.Graphics.Converters
 
                 foreach (var geometry in figmaVector.fillGeometry)
                 {
-                    builder.AppendLine($"canvas.Translate({figmaVector.absoluteBoundingBox.X.ToString(nfi)}f, {figmaVector.absoluteBoundingBox.Y.ToString(nfi)}f);");
+                    builder.AppendLine(
+                        $"canvas.Translate({figmaVector.absoluteBoundingBox.X.ToString(nfi)}f, {figmaVector.absoluteBoundingBox.Y.ToString(nfi)}f);");
 
                     string name = $"vector{_figmaVectorCount}";
 
@@ -135,12 +136,13 @@ namespace FigmaSharp.Maui.Graphics.Converters
             return builder.ToString();
         }
 
-        public override Views.IView ConvertToView(FigmaNode currentNode, ViewNode parent, ViewRenderService rendererService)
+        public override Views.IView ConvertToView(FigmaNode currentNode, ViewNode parent,
+            ViewRenderService rendererService)
         {
             throw new NotImplementedException();
         }
 
-        public override Type GetControlType(FigmaNode currentNode) 
+        public override Type GetControlType(FigmaNode currentNode)
             => typeof(View);
     }
 }

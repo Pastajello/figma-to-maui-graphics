@@ -9,7 +9,8 @@ namespace FigmaSharp.Maui.Graphics.Converters
 {
     public class FrameConverter : FrameConverterBase
     {
-        public override string ConvertToCode(CodeNode currentNode, CodeNode parentNode, ICodeRenderService rendererService)
+        public override string ConvertToCode(CodeNode currentNode, CodeNode parentNode,
+            ICodeRenderService rendererService)
         {
             if (currentNode.Node is not FigmaFrame frameNode)
             {
@@ -44,26 +45,21 @@ namespace FigmaSharp.Maui.Graphics.Converters
                     if (backgroundPaint.gradientStops != null)
                     {
                         if (backgroundPaint.type.Equals("GRADIENT_LINEAR", StringComparison.CurrentCultureIgnoreCase))
-                            builder.AppendLine($"canvas.SetFillPaint({backgroundPaint.gradientStops.ToLinearGradientPaint()}, new RectF({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f));");
+                            builder.AppendLine(
+                                $"canvas.SetFillPaint({backgroundPaint.gradientStops.ToLinearGradientPaint()}, new RectF({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f));");
 
                         if (backgroundPaint.type.Equals("GRADIENT_RADIAL", StringComparison.CurrentCultureIgnoreCase))
-                            builder.AppendLine($"canvas.SetFillPaint({backgroundPaint.gradientStops.ToRadialGradientPaint()}, new RectF({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f));");
+                            builder.AppendLine(
+                                $"canvas.SetFillPaint({backgroundPaint.gradientStops.ToRadialGradientPaint()}, new RectF({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f));");
                     }
 
-                    builder.AppendLine(string.Format($"canvas.FillRoundedRectangle({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f, {cornerRadius.ToString(nfi)}f);"));
-                    
+                    builder.AppendLine(string.Format(
+                        $"canvas.FillRoundedRectangle({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f, {cornerRadius.ToString(nfi)}f);"));
+
                     if (backgroundPaint.imageRef != null)
                     {
-                        var imageName = $"image_{frameNode.id.Replace(":","_")}";
-                        builder.AppendLine($"IImage {imageName} = null;");
-                        builder.AppendLine($"if ({imageName} == null)");
-                        builder.AppendLine($"{{");
-                        builder.AppendLine($"   using var stream = System.IO.File.OpenRead(\"images/{imageName}.png\");");
-                        builder.AppendLine($"   {imageName} = PlatformImage.FromStream(stream);");
-                        builder.AppendLine($"}}");
-                        builder.AppendLine($"canvas.DrawImage({imageName},{bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f);");
+                        HandleImageRef(builder, bounds, frameNode.id);
                     }
-
                 }
             }
 
@@ -83,10 +79,12 @@ namespace FigmaSharp.Maui.Graphics.Converters
                     if (strokePaint.gradientStops != null)
                     {
                         if (strokePaint.type.Equals("GRADIENT_LINEAR", StringComparison.CurrentCultureIgnoreCase))
-                            builder.AppendLine($"canvas.SetFillPaint({strokePaint.gradientStops.ToLinearGradientPaint()}, new RectF({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f));");
+                            builder.AppendLine(
+                                $"canvas.SetFillPaint({strokePaint.gradientStops.ToLinearGradientPaint()}, new RectF({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f));");
 
                         if (strokePaint.type.Equals("GRADIENT_RADIAL", StringComparison.CurrentCultureIgnoreCase))
-                            builder.AppendLine($"canvas.SetFillPaint({strokePaint.gradientStops.ToRadialGradientPaint()}, new RectF({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f));");
+                            builder.AppendLine(
+                                $"canvas.SetFillPaint({strokePaint.gradientStops.ToRadialGradientPaint()}, new RectF({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f));");
                     }
 
                     if (strokePaint.imageRef != null)
@@ -96,7 +94,8 @@ namespace FigmaSharp.Maui.Graphics.Converters
                 var strokeSize = frameNode.strokeWeight;
                 builder.AppendLine($"canvas.StrokeSize  = {strokeSize};");
 
-                builder.AppendLine(string.Format($"canvas.DrawRoundedRectangle({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f, {cornerRadius.ToString(nfi)}f);"));
+                builder.AppendLine(string.Format(
+                    $"canvas.DrawRoundedRectangle({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f, {cornerRadius.ToString(nfi)}f);"));
             }
 
             builder.AppendLine("canvas.RestoreState();");
@@ -104,7 +103,8 @@ namespace FigmaSharp.Maui.Graphics.Converters
             return builder.ToString();
         }
 
-        public override Views.IView ConvertToView(FigmaNode currentNode, ViewNode parent, ViewRenderService rendererService)
+        public override Views.IView ConvertToView(FigmaNode currentNode, ViewNode parent,
+            ViewRenderService rendererService)
         {
             throw new NotImplementedException();
         }

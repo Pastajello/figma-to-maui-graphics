@@ -285,7 +285,7 @@ namespace FigmaSharp.Services
 
                     string customNodeName = downloadImage.GetOutputFileName(imageScale.Scale);
                     var fileName = string.Concat(customNodeName, format);
-                    var fullPath = Path.Combine(destinationDirectory, $"image_{fileName.Replace(":","_")}");
+                    var fullPath = Path.Combine(destinationDirectory, $"image_{fileName.Replace(":","_").Replace(";", "_")}");
 
                     if (System.IO.File.Exists(fullPath))
                         System.IO.File.Delete(fullPath);
@@ -320,9 +320,6 @@ namespace FigmaSharp.Services
 
         public IEnumerable<FigmaNode> SearchImageNodes(FigmaNode mainNode)
         {
-            if (mainNode is FigmaInstance)
-                yield break;
-
             if (RendersAsImage(mainNode))
             {
                 yield return mainNode;
