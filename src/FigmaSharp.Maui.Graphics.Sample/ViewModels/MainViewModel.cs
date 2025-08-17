@@ -2,7 +2,6 @@
 using FigmaSharp.Maui.Graphics.Sample.Services;
 using FigmaSharp.Services;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Text;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -31,7 +30,7 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
         [ObservableProperty] private ObservableCollection<FigmaPage> _pages;
         [ObservableProperty] private FigmaPage _selectedPage;
         [ObservableProperty] private float _scale = 1;
-        
+
         private readonly Compiler _compiler;
         private RemoteNodeProvider _remoteNodeProvider;
         private CodeRenderService _codeRenderer;
@@ -56,9 +55,12 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
 
         public event Action RedrawRequested;
         public event Action DrawableSet;
+        public event Action Recompiled;
+        
 
         public ICommand GenerateCommand => new Command(async () => await GenerateCodeAsync());
         public ICommand ExportCommand => new Command(async () => await Export());
+        public ICommand CompileCommand => new Command(async () => await Compile());
         public ICommand ChangeSelectedPageCommand => new AsyncRelayCommand<FigmaPage>(ChangeSelectedPage);
 
         async Task ChangeSelectedPage(FigmaPage page)
@@ -73,13 +75,21 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
             if (!page.IsLoaded)
             {
                 IsGenerating = true;
-                await Task.Run(async ()=> await _remoteNodeProvider.LoadAsync(FileId, page.Node.id,5));
-                page.Node = _codeRenderer.NodeProvider.Nodes.FirstOrDefault(x=>x.id == page.Node.id);
+                await Task.Run(async () => await _remoteNodeProvider.LoadAsync(FileId, page.Node.id, 10));
+                page.Node = _codeRenderer.NodeProvider.Nodes.FirstOrDefault(x => x.id == page.Node.id);
                 var imagesIThink = _codeRenderer.NodeProvider.Nodes.Where(x => x is RectangleVector);
-                foreach (var images in imagesIThink)
+
+                var frames = _codeRenderer.NodeProvider.Nodes
+                    .Where(node => node is FigmaFrame)
+                    .Select(node => node as FigmaFrame);
+                foreach (var image in
+                         frames
+                             .Where(x => x.fills.Any(fill => fill.type == "IMAGE")))
                 {
+                    var imageUrl = $"https://api.figma.com/v1/images/:{FileId}?ids=:{image.fills.First(x=>x.type=="IMAGE").imageRef}";
                     int i = 5;
                 }
+
                 await GeneratePageSourceCode(page);
                 page.IsLoaded = true;
                 IsGenerating = false;
@@ -132,11 +142,12 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
                 Log.Add("Code generator initialized successfully.");
 
                 Pages = new ObservableCollection<FigmaPage>(
-                    _codeRenderer.NodeProvider.Nodes.Where(x => x.type == "CANVAS" && x.name != "---").Select(x => new FigmaPage()
-                    {
-                        Name = x.name,
-                        Node = x,
-                    }));
+                    _codeRenderer.NodeProvider.Nodes.Where(x => x.type == "CANVAS" && x.name != "---").Select(x =>
+                        new FigmaPage()
+                        {
+                            Name = x.name,
+                            Node = x,
+                        }));
 
                 RedrawRequested?.Invoke();
             }
@@ -179,7 +190,8 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
 
             string sourceCode = string.Format(@"         
                 using Microsoft.Maui.Graphics;
-
+                using Microsoft.Maui.Graphics.Platform;
+                
                 public void Draw(ICanvas canvas, RectF dirtyRect)
                 {{
                 {0}
@@ -190,6 +202,25 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
             return compilationResult;
         }
 
+        async Task Compile()
+        {
+            try
+            {
+                IsGenerating = true;
+                _selectedPage.CompilationResult = await CompileCodeAsync(_selectedPage.Code);
+                Recompiled?.Invoke();
+                RedrawRequested?.Invoke();
+            }
+            catch (Exception ex)
+            {
+                
+            }
+            finally
+            {
+                IsGenerating = false;
+            }
+        }
+        
         async Task Export()
         {
             if (string.IsNullOrEmpty(Code))

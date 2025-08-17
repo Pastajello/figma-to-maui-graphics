@@ -120,7 +120,8 @@
             </Border>
             <!--  CODE EDITOR  -->
             <Border Grid.Column="2" Style="{StaticResource FigmaBorderStyle}">
-                <Grid IsVisible="{Binding SelectedPage.Code, Converter={StaticResource IsGeneratingToVisibleConverter}}" RowDefinitions="Auto, *, Auto">
+                <Grid IsVisible="{Binding SelectedPage.Code, Converter={StaticResource IsGeneratingToVisibleConverter}}"
+                      RowDefinitions="Auto, *,Auto, Auto,Auto">
                     <Label Style="{StaticResource HeaderTextStyle}" Text="Code" />
                     <ScrollView Grid.Row="1">
                         <Editor
@@ -128,11 +129,26 @@
                             Text="{Binding SelectedPage.Code}"
                             x:Name="CodeEditor" />
                     </ScrollView>
+                    <CollectionView
+                        Grid.Row="2"
+                        ItemsSource="{Binding SelectedPage.CompilationResult.CompilationMessages}"
+                        Style="{StaticResource LogListStyle}">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Label Text="{Binding .}" LineBreakMode="CharacterWrap"></Label>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
                     <Button
                         Command="{Binding ExportCommand}"
-                        Grid.Row="2"
+                        Grid.Row="3"
                         Style="{StaticResource ExportButtonStyle}"
                         Text="Export" />
+                    <Button
+                        Command="{Binding CompileCommand}"
+                        Grid.Row="4"
+                        Style="{StaticResource ExportButtonStyle}"
+                        Text="Compile" />
                 </Grid>
             </Border>
             <!--  OUTPUT  -->
@@ -151,7 +167,7 @@
         </Grid>
         <!--  LOADING  -->
         <Grid InputTransparent="True">
-            <ActivityIndicator IsRunning="{Binding IsGenerating}" />
+            <ActivityIndicator IsRunning="{Binding IsGenerating}" Color="Red" Scale="2"/>
         </Grid>
     </Grid>
 </ContentPage>

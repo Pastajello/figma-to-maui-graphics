@@ -61,7 +61,16 @@ namespace FigmaSharp.Maui.Graphics.Converters
                     }
 
                     if (backgroundPaint.imageRef != null)
-                        builder.AppendLine($"canvas.FillColor  = Colors.White;");
+                    {
+                        var imageName = $"image_{backgroundPaint.ID.Replace(":","_")}";
+                        builder.AppendLine($"IImage {imageName} = null;");
+                        builder.AppendLine($"if ({imageName} == null)");
+                        builder.AppendLine($"{{");
+                        builder.AppendLine($"   using var stream = System.IO.File.OpenRead(\"images/{imageName}.png\");");
+                        builder.AppendLine($"   {imageName} = PlatformImage.FromStream(stream);");
+                        builder.AppendLine($"}}");
+                        builder.AppendLine($"canvas.DrawImage({imageName},{bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f);");
+                    }
 
                     foreach (var geometry in figmaVector.fillGeometry)
                     {

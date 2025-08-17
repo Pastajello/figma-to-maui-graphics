@@ -4,7 +4,7 @@ namespace FigmaSharp.Maui.Graphics.Sample
 {
     public class CompilationResult
     {
-        private MethodInfo drawMethod = null;
+        private MethodInfo _drawMethod = null;
         private object instance = null;
 
         public IEnumerable<CompilationMessage> CompilationMessages { get; set; }
@@ -17,16 +17,16 @@ namespace FigmaSharp.Maui.Graphics.Sample
         {
             var messages = new List<CompilationMessage>();
 
-            if (ScriptType != null && drawMethod == null)
+            if (ScriptType != null && _drawMethod == null)
             {
-                drawMethod = ScriptType.GetMethod(
+                _drawMethod = ScriptType.GetMethod(
                      "Draw",
                      BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.InvokeMethod,
                      null,
                      new[] { typeof(ICanvas), typeof(RectF) },
                      null);
 
-                if (drawMethod == null)
+                if (_drawMethod == null)
                 {
                     messages.Add(new CompilationMessage
                     {
@@ -34,7 +34,7 @@ namespace FigmaSharp.Maui.Graphics.Sample
                         Severity = CompilationMessageSeverity.Error
                     });
                 }
-                else if (!drawMethod.IsStatic)
+                else if (!_drawMethod.IsStatic)
                 {
                     instance = Activator.CreateInstance(ScriptType, new[] { new object[2] });
                 }
@@ -42,7 +42,7 @@ namespace FigmaSharp.Maui.Graphics.Sample
 
             try
             {
-                drawMethod?.Invoke(instance, new object[] { canvas, dirtyRect });
+                _drawMethod?.Invoke(instance, new object[] { canvas, dirtyRect });
             }
             catch (Exception ex)
             {
@@ -57,6 +57,11 @@ namespace FigmaSharp.Maui.Graphics.Sample
             }
 
             return messages;
+        }
+
+        public void Clean()
+        {
+            _drawMethod = null;
         }
     }
 }

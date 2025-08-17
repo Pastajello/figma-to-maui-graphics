@@ -16,6 +16,13 @@ public class MyDrawable : IDrawable
                 _graphicsView?.Invalidate();
             });
         };
+        _vm.Recompiled += () =>
+        {
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                _vm.SelectedPage.CompilationResult?.Clean();
+            });
+        };
     }
 
     private GraphicsView? _graphicsView;

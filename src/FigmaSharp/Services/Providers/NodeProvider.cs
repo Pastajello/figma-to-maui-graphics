@@ -26,6 +26,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using FigmaSharp.Helpers;
 using FigmaSharp.Models;
@@ -50,7 +51,7 @@ namespace FigmaSharp.Services
         public string File { get; set; }
 
         public Task LoadAsync(string file) => Load(file);
-        public Task LoadAsync(string file, string nodeId, int depth) => LoadWithNodeId(file,nodeId,depth);
+        public Task LoadAsync(string file, string nodeId, int depth) => LoadWithNodeId(file, nodeId, depth);
 
         private async Task LoadWithNodeId(string file, string nodeId, int depth)
         {
@@ -61,7 +62,7 @@ namespace FigmaSharp.Services
             {
                 Nodes.Clear();
 
-                var contentTemplate = await GetContentById(file, nodeId,depth);
+                var contentTemplate = await GetContentById(file, nodeId, depth);
 
                 //parse the json into a model format
                 Response = WebApiHelper.GetFigmaResponseFromFileContent(contentTemplate);
@@ -69,6 +70,8 @@ namespace FigmaSharp.Services
                 //proceses all the views recursively
                 foreach (var item in Response.document.children)
                     ProcessNodeRecursively(item, null);
+                
+                LoadImages();
             }
             catch (System.Net.WebException ex)
             {
@@ -84,7 +87,7 @@ namespace FigmaSharp.Services
                     ex);
             }
         }
-   
+
         public async Task Load(string file)
         {
             this.File = file;
@@ -102,6 +105,8 @@ namespace FigmaSharp.Services
                 //proceses all the views recursively
                 foreach (var item in Response.document.children)
                     ProcessNodeRecursively(item, null);
+
+                LoadImages();
             }
             catch (System.Net.WebException ex)
             {
@@ -116,6 +121,24 @@ namespace FigmaSharp.Services
                     $"Error reading remote resources. Ensure you added NewtonSoft nuget or cannot parse the to json?",
                     ex);
             }
+        }
+
+        private void LoadImages()
+        {
+            var images = SearchImageNodes();
+            var imageRequests = new List<IImageNodeRequest>();
+            if (images == null || images.Count() < 1)
+            {
+                return;
+            }
+            foreach (var image in images)
+            {
+                var imageRequest = CreateEmptyImageNodeRequest(image);
+                imageRequests.Add(imageRequest);
+            }
+            
+            AppContext.Api.ProcessDownloadImagesAsync(File, imageRequests.ToArray()).GetAwaiter().GetResult();
+            SaveResourceFiles("images", ".png",imageRequests.ToArray());
         }
 
         public FigmaNode[] GetMainGeneratedLayers()
@@ -175,7 +198,6 @@ namespace FigmaSharp.Services
         }
 
 
-
         void ProcessNodeRecursively(FigmaNode node, FigmaNode parent)
         {
             node.Parent = parent;
@@ -193,9 +215,9 @@ namespace FigmaSharp.Services
                     ProcessNodeRecursively(item, node);
             }
         }
-        
+
         public abstract Task<string> GetContentTemplate(string file);
-        public abstract Task<string> GetContentById(string file, string id,int depth);
+        public abstract Task<string> GetContentById(string file, string id, int depth);
 
         public abstract void OnStartImageLinkProcessing(List<ViewNode> imageFigmaNodes);
 
@@ -249,7 +271,10 @@ namespace FigmaSharp.Services
             IImageNodeRequest[] downloadImages)
         {
             if (!Directory.Exists(destinationDirectory))
-                throw new DirectoryNotFoundException(destinationDirectory);
+            {
+                var destDir = Directory.CreateDirectory(destinationDirectory);
+                Console.WriteLine(destDir.FullName);
+            }
 
             foreach (var downloadImage in downloadImages)
             {
@@ -260,7 +285,7 @@ namespace FigmaSharp.Services
 
                     string customNodeName = downloadImage.GetOutputFileName(imageScale.Scale);
                     var fileName = string.Concat(customNodeName, format);
-                    var fullPath = Path.Combine(destinationDirectory, fileName);
+                    var fullPath = Path.Combine(destinationDirectory, $"image_{fileName.Replace(":","_")}");
 
                     if (System.IO.File.Exists(fullPath))
                         System.IO.File.Delete(fullPath);

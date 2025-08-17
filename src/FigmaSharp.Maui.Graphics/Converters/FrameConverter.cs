@@ -50,10 +50,20 @@ namespace FigmaSharp.Maui.Graphics.Converters
                             builder.AppendLine($"canvas.SetFillPaint({backgroundPaint.gradientStops.ToRadialGradientPaint()}, new RectF({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f));");
                     }
 
-                    if (backgroundPaint.imageRef != null)
-                        builder.AppendLine($"canvas.FillColor  = Colors.White;");
-
                     builder.AppendLine(string.Format($"canvas.FillRoundedRectangle({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f, {cornerRadius.ToString(nfi)}f);"));
+                    
+                    if (backgroundPaint.imageRef != null)
+                    {
+                        var imageName = $"image_{frameNode.id.Replace(":","_")}";
+                        builder.AppendLine($"IImage {imageName} = null;");
+                        builder.AppendLine($"if ({imageName} == null)");
+                        builder.AppendLine($"{{");
+                        builder.AppendLine($"   using var stream = System.IO.File.OpenRead(\"images/{imageName}.png\");");
+                        builder.AppendLine($"   {imageName} = PlatformImage.FromStream(stream);");
+                        builder.AppendLine($"}}");
+                        builder.AppendLine($"canvas.DrawImage({imageName},{bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f);");
+                    }
+
                 }
             }
 
