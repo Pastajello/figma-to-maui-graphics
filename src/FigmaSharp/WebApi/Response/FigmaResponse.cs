@@ -29,7 +29,27 @@ using Newtonsoft.Json;
 
 namespace FigmaSharp.Models
 {
+    public class FigmaComponentSet : FigmaNode
+    {
+        [JsonProperty("componentPropertyDefinitions")]
+        public Dictionary<string, FigmaComponentPropertyDefinition> ComponentPropertyDefinitions { get; set; }
 
+        [JsonProperty("children")]
+        public List<FigmaNode> Children { get; set; } = new List<FigmaNode>();
+    }
+
+    public class FigmaComponentPropertyDefinition
+    {
+        [JsonProperty("type")]
+        public string Type { get; set; }
+
+        [JsonProperty("defaultValue")]
+        public string DefaultValue { get; set; }
+
+        [JsonProperty("variantOptions")]
+        public List<string> VariantOptions { get; set; } = new List<string>();
+    }
+    
     public class FigmaComponent
     {
         public string key { get; set; }

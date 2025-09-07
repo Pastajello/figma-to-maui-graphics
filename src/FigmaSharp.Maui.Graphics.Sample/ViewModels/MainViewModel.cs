@@ -40,10 +40,12 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
             Drawable = new MyDrawable(this);
             DrawableSet?.Invoke();
 #if DEBUG
-            // INSERT YOUR FIGMA ACCESS TOKEN
-            Token = "figd_zLr8EBkZzRtZZgaakKq8NWVpBQFUanpfYzhhVOR8";
+            Token = "figd_IM4B7-AQdA6spGvo5CEnk8I2hWSWmwOR--y0mYCg";
             // INSERT THE FILE ID
-            FileId = "SMnzIUGXtQinadyCN4qfOe";//"SMnzIUGXtQinadyCN4qfOe";
+            // FileId = "b2J77o04FzVZNOFyZ3NVtd";
+            FileId = "JfcelfM7TT1XOqOcbiPtb8";
+
+
 #endif
             Log = new ObservableCollection<string>();
             _compiler = new Compiler();
@@ -75,7 +77,7 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
             if (!page.IsLoaded)
             {
                 IsGenerating = true;
-                await Task.Run(async () => await _remoteNodeProvider.LoadAsync(FileId, page.Node.id, 10));
+                await Task.Run(async () => await _remoteNodeProvider.LoadAsync(FileId, page.Node.id, 20));
                 page.Node = _codeRenderer.NodeProvider.Nodes.FirstOrDefault(x => x.id == page.Node.id);
                 var imagesIThink = _codeRenderer.NodeProvider.Nodes.Where(x => x is RectangleVector);
 

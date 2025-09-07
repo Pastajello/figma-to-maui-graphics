@@ -128,13 +128,19 @@ namespace FigmaSharp
             {
                 figmaObject = jsonObject.ToObject<FigmaComponentEntity>();
             }
+            else if (jsonObject["type"].Value<string>() == "COMPONENT_SET")
+            {
+                figmaObject = jsonObject.ToObject<FigmaComponentSet>();
+            }
             else if (jsonObject["type"].Value<string>() == "BOOLEAN_OPERATION")
             {
                 figmaObject = jsonObject.ToObject<FigmaBoolean>();
             }
-			else if (jsonObject["type"].Value<string> () == "BOOLEAN_OPERATION") {
+			else if (jsonObject["type"].Value<string> () == "BOOLEAN_OPERATION")
+            {
                 figmaObject = jsonObject.ToObject<FigmaBoolean> ();
-            } else
+            } 
+            else
             {
                 return jsonObject.ToObject<object>();
             }
