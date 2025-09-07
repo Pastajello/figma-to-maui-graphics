@@ -40,10 +40,9 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
             Drawable = new MyDrawable(this);
             DrawableSet?.Invoke();
 #if DEBUG
-            Token = "figd_IM4B7-AQdA6spGvo5CEnk8I2hWSWmwOR--y0mYCg";
+            Token = "";
             // INSERT THE FILE ID
-            // FileId = "b2J77o04FzVZNOFyZ3NVtd";
-            FileId = "JfcelfM7TT1XOqOcbiPtb8";
+             FileId = "";
 
 
 #endif
