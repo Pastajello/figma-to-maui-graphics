@@ -34,7 +34,13 @@ namespace FigmaSharp.Services
     public interface ICodeRenderService
     {
         CodeRenderServiceOptions Options { get; }
+        void Clear();
+        void GetCode(StringBuilder builder, CodeNode node, CodeNode parent = null, CodeRenderServiceOptions currentRendererOptions = null, ITranslationService translateService = null);
+        bool NodeRendersVar(CodeNode currentNode, CodeNode parentNode);
+        bool NeedsRenderConstructor(CodeNode node, CodeNode parent);
+        string GetTranslatedText(FigmaText text);
         string GetTranslatedText(string text, bool textCondition = true);
+        INodeProvider NodeProvider { get; }
     }
 
     public class CodeRenderService : RenderService, ICodeRenderService
@@ -213,6 +219,16 @@ namespace FigmaSharp.Services
                 //first loop
                 Clear();
             }
+        }
+        
+        public bool NodeRendersVar (CodeNode currentNode, CodeNode parentNode)
+        {
+            if (currentNode.Node.GetNodeTypeName () == "mastercontent") {
+                return false;
+            }
+
+            return !currentNode.Node.TryGetNodeCustomName(out var _);
+
         }
 
         public NodeConverter GetNodeConverter(CodeNode node)
