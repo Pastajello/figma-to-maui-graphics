@@ -11,14 +11,25 @@ namespace FigmaSharp.Maui.Graphics.Sample
             InitializeComponent();
         }
 
-        protected override void OnBindingContextChanged()
+        protected override void OnAppearing()
         {
-            base.OnBindingContextChanged();
-
+            base.OnAppearing();
+            
             if (BindingContext is MainViewModel vm)
             {
                 VM = vm;
+                vm.DrawableSet -= VmOnDrawableSet;
                 vm.DrawableSet += VmOnDrawableSet;
+            }
+        }
+
+        protected override void OnDisappearing()
+        {
+            base.OnDisappearing();
+            
+            if (BindingContext is MainViewModel vm)
+            {
+                vm.DrawableSet -= VmOnDrawableSet;
             }
         }
 
