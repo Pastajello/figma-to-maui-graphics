@@ -20,7 +20,7 @@ public class MyDrawable : IDrawable
         {
             MainThread.BeginInvokeOnMainThread(() =>
             {
-                _vm.SelectedPage.CompilationResult?.Clean();
+                _vm.SelectedNodeModel.CompilationResult?.Clean();
             });
         };
     }
@@ -36,6 +36,6 @@ public class MyDrawable : IDrawable
         canvas.SaveState();
         canvas.Translate(_vm.OffsetX, _vm.OffsetY);
         canvas.Scale(_vm.Scale,_vm.Scale);
-        _vm.SelectedPage.CompilationResult?.Draw(canvas, dirtyRect);
+        _vm.SelectedNodeModel.CompilationResult?.Draw(canvas, dirtyRect);
     }
 }

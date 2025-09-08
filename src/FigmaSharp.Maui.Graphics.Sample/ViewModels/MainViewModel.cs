@@ -7,6 +7,7 @@ using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FigmaSharp.Models;
+using UIKit;
 
 namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
 {
@@ -20,6 +21,16 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
         public bool IsLoaded;
     }
 
+    public partial class NodeModel : ObservableObject
+    {
+        [ObservableProperty] private string _name;
+        [ObservableProperty] private string _code;
+        [ObservableProperty] private CompilationResult _compilationResult;
+        [ObservableProperty] private bool _isSelected;
+        public bool IsLoaded;
+        [ObservableProperty] public FigmaNode node;
+    }
+
     public partial class MainViewModel : ObservableObject
     {
         [ObservableProperty] private string _token;
@@ -28,8 +39,9 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
         [ObservableProperty] private bool _isGenerating;
         [ObservableProperty] private ObservableCollection<string> _log;
         [ObservableProperty] private ObservableCollection<FigmaPage> _pages;
-        [ObservableProperty] private FigmaPage _selectedPage;
+        [ObservableProperty] private NodeModel _selectedNodeModel;
         [ObservableProperty] private float _scale = 1;
+        [ObservableProperty] private ObservableCollection<FlatNode> _treeNodes = new();
 
         private readonly Compiler _compiler;
         private RemoteNodeProvider _remoteNodeProvider;
@@ -57,50 +69,12 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
         public event Action RedrawRequested;
         public event Action DrawableSet;
         public event Action Recompiled;
-        
+
 
         public ICommand GenerateCommand => new Command(async () => await GenerateCodeAsync());
         public ICommand ExportCommand => new Command(async () => await Export());
         public ICommand CompileCommand => new Command(async () => await Compile());
-        public ICommand ChangeSelectedPageCommand => new AsyncRelayCommand<FigmaPage>(ChangeSelectedPage);
-
-        async Task ChangeSelectedPage(FigmaPage page)
-        {
-            if (SelectedPage != null)
-            {
-                SelectedPage.IsSelected = false;
-            }
-
-            SelectedPage = null;
-
-            if (!page.IsLoaded)
-            {
-                IsGenerating = true;
-                await Task.Run(async () => await _remoteNodeProvider.LoadAsync(FileId, page.Node.id, 20));
-                page.Node = _codeRenderer.NodeProvider.Nodes.FirstOrDefault(x => x.id == page.Node.id);
-                var imagesIThink = _codeRenderer.NodeProvider.Nodes.Where(x => x is RectangleVector);
-
-                var frames = _codeRenderer.NodeProvider.Nodes
-                    .Where(node => node is FigmaFrame)
-                    .Select(node => node as FigmaFrame);
-                foreach (var image in
-                         frames
-                             .Where(x => x.fills.Any(fill => fill.type == "IMAGE")))
-                {
-                    var imageUrl = $"https://api.figma.com/v1/images/:{FileId}?ids=:{image.fills.First(x=>x.type=="IMAGE").imageRef}";
-                    int i = 5;
-                }
-
-                await GeneratePageSourceCode(page);
-                page.IsLoaded = true;
-                IsGenerating = false;
-            }
-
-            SelectedPage = page;
-            SelectedPage.IsSelected = true;
-
-            RedrawRequested?.Invoke();
-        }
+        public ICommand TapNodeCommand => new AsyncRelayCommand<NodeModel>(OnTapNodeCommand);
 
         async Task GenerateCodeAsync()
         {
@@ -150,6 +124,20 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
                             Node = x,
                         }));
 
+                var treeNodes = new List<FlatNode>();
+                foreach (var page in Pages)
+                {
+                    treeNodes.AddRange(MapFigmaNodes(new List<NodeModel>()
+                    {
+                        new NodeModel()
+                        {
+                            Node = page.Node
+                        }
+                    }));
+                }
+
+                TreeNodes = new ObservableCollection<FlatNode>(treeNodes);
+
                 RedrawRequested?.Invoke();
             }
             catch (Exception ex)
@@ -162,24 +150,122 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
             }
         }
 
-        private async Task GeneratePageSourceCode(FigmaPage page)
+
+        async Task OnTapNodeCommand(NodeModel nodeModel)
+        {
+            if (SelectedNodeModel != null)
+            {
+                SelectedNodeModel.IsSelected = false;
+            }
+
+            SelectedNodeModel = null;
+
+            if (!nodeModel.IsLoaded)
+            {
+                IsGenerating = true;
+                await Task.Run(async () => await _remoteNodeProvider.LoadAsync(FileId, nodeModel.node.id, 5));
+                nodeModel.Node = _codeRenderer.NodeProvider.Nodes.FirstOrDefault(x => x.id == nodeModel.node.id);
+                //var imagesIThink = _codeRenderer.NodeProvider.Nodes.Where(x => x is RectangleVector);
+                // var frames = _codeRenderer.NodeProvider.Nodes
+                //     .Where(node => node is FigmaFrame)
+                //     .Select(node => node as FigmaFrame);
+                // foreach (var image in
+                //          frames
+                //              .Where(x => x.fills.Any(fill => fill.type == "IMAGE")))
+                // {
+                //     var imageUrl =
+                //         $"https://api.figma.com/v1/images/:{FileId}?ids=:{image.fills.First(x => x.type == "IMAGE").imageRef}";
+                // }
+                var treeNodes = new List<FlatNode>();
+                treeNodes.AddRange(TreeNodes);
+                treeNodes.AddRange(MapFigmaNodes(
+                    GetNodes(nodeModel.Node).Select(x => new NodeModel()
+                    {
+                        Node = x
+                    })
+                ));
+
+                TreeNodes = new ObservableCollection<FlatNode>(treeNodes);
+
+                await GeneratePageSourceCode(nodeModel);
+                nodeModel.IsLoaded = true;
+                IsGenerating = false;
+            }
+
+            SelectedNodeModel = nodeModel;
+            SelectedNodeModel.IsSelected = true;
+
+            RedrawRequested?.Invoke();
+        }
+
+        IEnumerable<FlatNode> MapFigmaNodes(IEnumerable<NodeModel> figmaNodes)
+        {
+            if (figmaNodes == null || figmaNodes.Count() == 0)
+            {
+                return new List<FlatNode>();
+            }
+
+            return figmaNodes.Select(n => new FlatNode
+            {
+                Id = n.Node.id,
+                ParentId = n.Node.Parent?.id,
+                Name = string.IsNullOrEmpty(n.Node.name) ? $"Node {n.Node.id}" : n.Node.name,
+                Depth = ComputeDepth(n.Node),
+                Tag = n,
+            });
+        }
+
+        int ComputeDepth(FigmaNode n)
+        {
+            int d = 0;
+            var p = n.Parent;
+            while (p != null)
+            {
+                d++;
+                p = p.Parent;
+            }
+
+            return d;
+        }
+
+        private List<FigmaNode> GetNodes(FigmaNode node)
+        {
+            var list = new List<FigmaNode>();
+
+            if (node is IFigmaNodeContainer container)
+            {
+                foreach (var child in container.children)
+                {
+                    list.Add(child);
+                    list.AddRange(GetNodes(child));
+                }
+            }
+            else
+            {
+                list.Add(node);
+            }
+
+            return list;
+        }
+
+        private async Task GeneratePageSourceCode(NodeModel nodeModel)
         {
             var stringBuilder = new StringBuilder();
-            Log.Add($"Node {page.Node.id} found successfully.");
+            Log.Add($"Node {nodeModel.Node.id} found successfully.");
 
-            Log.Add($"Generating source code for page {page.Name}...");
+            Log.Add($"Generating source code for page {nodeModel.Node.name}...");
 
-            var codeNode = new CodeNode(page.Node);
+            var codeNode = new CodeNode(nodeModel.Node);
 
             _codeRenderer.GetCode(stringBuilder, codeNode);
 
             var code = stringBuilder.ToString();
 
-            Log.Add($"Source Code for page {page.Name} generated successfully.");
-            page.Code = code;
-            page.CompilationResult = await CompileCodeAsync(code);
+            Log.Add($"Source Code for page {nodeModel.Node.name} generated successfully.");
+            nodeModel.Code = code;
+            nodeModel.CompilationResult = await CompileCodeAsync(code);
 
-            Log.Add($"Source Code for page {page.Name} generated successfully.");
+            Log.Add($"Source Code for page {nodeModel.Name} generated successfully.");
         }
 
         async Task<CompilationResult> CompileCodeAsync(string code)
@@ -208,20 +294,19 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
             try
             {
                 IsGenerating = true;
-                _selectedPage.CompilationResult = await CompileCodeAsync(_selectedPage.Code);
+                SelectedNodeModel.CompilationResult = await CompileCodeAsync(_selectedNodeModel.Code);
                 Recompiled?.Invoke();
                 RedrawRequested?.Invoke();
             }
             catch (Exception ex)
             {
-                
             }
             finally
             {
                 IsGenerating = false;
             }
         }
-        
+
         async Task Export()
         {
             if (string.IsNullOrEmpty(Code))

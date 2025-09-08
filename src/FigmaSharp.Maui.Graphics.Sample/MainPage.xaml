@@ -7,7 +7,9 @@
     xmlns:converters="clr-namespace:FigmaSharp.Maui.Graphics.Sample.Converters"
     xmlns:models="clr-namespace:FigmaSharp.Maui.Graphics.Sample.ViewModels"
     xmlns:viewModels="clr-namespace:FigmaSharp.Maui.Graphics.Sample.ViewModels"
-    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:DataType="viewModels:MainViewModel"
+    xmlns:sample="clr-namespace:FigmaSharp.Maui.Graphics.Sample">
     <ContentPage.Resources>
         <ResourceDictionary>
             <converters:IsGeneratingToVisibleConverter x:Key="IsGeneratingToVisibleConverter" />
@@ -56,7 +58,7 @@
     </ContentPage.BindingContext>
     <Grid>
         <!--  CONTENT  -->
-        <Grid ColumnDefinitions="Auto, *, *" RowDefinitions="4*, *">
+        <Grid ColumnDefinitions="*, 2*, *" RowDefinitions="4*, *">
             <!--  SETTINGS  -->
             <Border Style="{StaticResource FigmaBorderStyle}">
                 <Grid RowDefinitions="Auto,*">
@@ -71,29 +73,32 @@
                             Text="Generate" />
                     </VerticalStackLayout>
                     <ScrollView Grid.Row="1">
-                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Pages}">
-                            <BindableLayout.ItemTemplate>
-                                <DataTemplate x:DataType="models:FigmaPage">
-                                    <Grid
-                                        ColumnDefinitions="Auto, *"
-                                        ColumnSpacing="8"
-                                        RowDefinitions="60">
-                                        <Grid.GestureRecognizers>
-                                            <TapGestureRecognizer Command="{Binding BindingContext.ChangeSelectedPageCommand, Source={x:Reference root}}" CommandParameter="{Binding}" />
-                                        </Grid.GestureRecognizers>
-                                        <CheckBox
-                                            InputTransparent="True"
-                                            IsChecked="{Binding IsSelected}"
-                                            VerticalOptions="Center" />
-                                        <Label
-                                            FontSize="16"
-                                            Grid.Column="1"
-                                            Text="{Binding Name}"
-                                            VerticalOptions="Center" />
-                                    </Grid>
-                                </DataTemplate>
-                            </BindableLayout.ItemTemplate>
-                        </VerticalStackLayout>
+                        <sample:ExplorerTreeView x:Name="tree" 
+                                                 RowTappedCommand="{Binding TapNodeCommand}"
+                                                 ItemsSource="{Binding TreeNodes}"/>
+                        <!-- <VerticalStackLayout BindableLayout.ItemsSource="{Binding Pages}"> -->
+                        <!--     <BindableLayout.ItemTemplate> -->
+                        <!--         <DataTemplate x:DataType="models:FigmaPage"> -->
+                        <!--             <Grid -->
+                        <!--                 ColumnDefinitions="Auto, *" -->
+                        <!--                 ColumnSpacing="8" -->
+                        <!--                 RowDefinitions="40"> -->
+                        <!--                 <Grid.GestureRecognizers> -->
+                        <!--                     <TapGestureRecognizer Command="{Binding BindingContext.ChangeSelectedPageCommand, Source={x:Reference root}}" CommandParameter="{Binding}" /> -->
+                        <!--                 </Grid.GestureRecognizers> -->
+                        <!--                 <CheckBox -->
+                        <!--                     InputTransparent="True" -->
+                        <!--                     IsChecked="{Binding IsSelected}" -->
+                        <!--                     VerticalOptions="Center" /> -->
+                        <!--                 <Label -->
+                        <!--                     FontSize="16" -->
+                        <!--                     Grid.Column="1" -->
+                        <!--                     Text="{Binding Name}" -->
+                        <!--                     VerticalOptions="Center" /> -->
+                        <!--             </Grid> -->
+                        <!--         </DataTemplate> -->
+                        <!--     </BindableLayout.ItemTemplate> -->
+                        <!-- </VerticalStackLayout> -->
                     </ScrollView>
                 </Grid>
 
@@ -120,18 +125,18 @@
             </Border>
             <!--  CODE EDITOR  -->
             <Border Grid.Column="2" Style="{StaticResource FigmaBorderStyle}">
-                <Grid IsVisible="{Binding SelectedPage.Code, Converter={StaticResource IsGeneratingToVisibleConverter}}"
+                <Grid IsVisible="{Binding SelectedNodeModel.Code, Converter={StaticResource IsGeneratingToVisibleConverter}}"
                       RowDefinitions="Auto, *,Auto, Auto,Auto">
                     <Label Style="{StaticResource HeaderTextStyle}" Text="Code" />
                     <ScrollView Grid.Row="1">
                         <Editor
                             Style="{StaticResource CodeEditorStyle}"
-                            Text="{Binding SelectedPage.Code}"
+                            Text="{Binding SelectedNodeModel.Code}"
                             x:Name="CodeEditor" />
                     </ScrollView>
                     <CollectionView
                         Grid.Row="2"
-                        ItemsSource="{Binding SelectedPage.CompilationResult.CompilationMessages}"
+                        ItemsSource="{Binding SelectedNodeModel.CompilationResult.CompilationMessages}"
                         Style="{StaticResource LogListStyle}">
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
