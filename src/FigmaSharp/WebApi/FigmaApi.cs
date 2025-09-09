@@ -164,10 +164,7 @@ namespace FigmaSharp
             var finalquery = query;
             var response = await client.GetAsync(finalquery);
             var content = await response.Content.ReadAsStringAsync();
-
-            var json = Newtonsoft.Json.Linq.JObject.Parse(content);
-
-            return json.ToString();
+            return content;
         }
 
         #endregion

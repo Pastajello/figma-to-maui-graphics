@@ -71,7 +71,7 @@ namespace FigmaSharp.Services
                 foreach (var item in Response.document.children)
                     ProcessNodeRecursively(item, null);
                 
-                LoadImages();
+                await LoadImages();
             }
             catch (System.Net.WebException ex)
             {
@@ -123,7 +123,7 @@ namespace FigmaSharp.Services
             }
         }
 
-        private void LoadImages()
+        private async Task LoadImages()
         {
             var images = SearchImageNodes();
             var imageRequests = new List<IImageNodeRequest>();
@@ -137,7 +137,7 @@ namespace FigmaSharp.Services
                 imageRequests.Add(imageRequest);
             }
             
-            AppContext.Api.ProcessDownloadImagesAsync(File, imageRequests.ToArray()).GetAwaiter().GetResult();
+            await AppContext.Api.ProcessDownloadImagesAsync(File, imageRequests.ToArray());
             SaveResourceFiles("images", ".png",imageRequests.ToArray());
         }
 

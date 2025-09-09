@@ -28,7 +28,7 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
         [ObservableProperty] private CompilationResult _compilationResult;
         [ObservableProperty] private bool _isSelected;
         public bool IsLoaded;
-        [ObservableProperty] public FigmaNode node;
+        [ObservableProperty] private FigmaNode _node;
     }
 
     public partial class MainViewModel : ObservableObject
@@ -39,7 +39,7 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
         [ObservableProperty] private bool _isGenerating;
         [ObservableProperty] private ObservableCollection<string> _log;
         [ObservableProperty] private ObservableCollection<FigmaPage> _pages;
-        [ObservableProperty] private NodeModel _selectedNodeModel;
+        [ObservableProperty] private NodeModel? _selectedNodeModel;
         [ObservableProperty] private float _scale = 1;
         [ObservableProperty] private ObservableCollection<FlatNode> _treeNodes = new();
 
@@ -127,12 +127,9 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
                 var treeNodes = new List<FlatNode>();
                 foreach (var page in Pages)
                 {
-                    treeNodes.AddRange(MapFigmaNodes(new List<NodeModel>()
+                    treeNodes.AddRange(MapFigmaNodes(new List<FigmaNode>()
                     {
-                        new NodeModel()
-                        {
-                            Node = page.Node
-                        }
+                        page.Node
                     }));
                 }
 
@@ -153,52 +150,45 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
 
         async Task OnTapNodeCommand(NodeModel nodeModel)
         {
-            if (SelectedNodeModel != null)
+            try
             {
-                SelectedNodeModel.IsSelected = false;
+                if (SelectedNodeModel != null)
+                {
+                    SelectedNodeModel.IsSelected = false;
+                }
+
+                SelectedNodeModel = null;
+
+                if (!nodeModel.IsLoaded)
+                {
+                    IsGenerating = true;
+                    await _remoteNodeProvider.LoadAsync(FileId, nodeModel.Node.id, 5);
+                    nodeModel.Node = _codeRenderer.NodeProvider.Nodes.FirstOrDefault(x => x.id == nodeModel.Node.id);
+                    var treeNodes = new List<FlatNode>();
+                    treeNodes.AddRange(TreeNodes);
+                    treeNodes.AddRange(MapFigmaNodes(GetNodes(nodeModel.Node)));
+
+                    TreeNodes = new ObservableCollection<FlatNode>(treeNodes);
+
+                    await GeneratePageSourceCode(nodeModel);
+                    nodeModel.IsLoaded = true;
+                }
+
+                SelectedNodeModel = nodeModel;
+                SelectedNodeModel.IsSelected = true;
             }
-
-            SelectedNodeModel = null;
-
-            if (!nodeModel.IsLoaded)
+            catch (Exception e)
             {
-                IsGenerating = true;
-                await Task.Run(async () => await _remoteNodeProvider.LoadAsync(FileId, nodeModel.node.id, 5));
-                nodeModel.Node = _codeRenderer.NodeProvider.Nodes.FirstOrDefault(x => x.id == nodeModel.node.id);
-                //var imagesIThink = _codeRenderer.NodeProvider.Nodes.Where(x => x is RectangleVector);
-                // var frames = _codeRenderer.NodeProvider.Nodes
-                //     .Where(node => node is FigmaFrame)
-                //     .Select(node => node as FigmaFrame);
-                // foreach (var image in
-                //          frames
-                //              .Where(x => x.fills.Any(fill => fill.type == "IMAGE")))
-                // {
-                //     var imageUrl =
-                //         $"https://api.figma.com/v1/images/:{FileId}?ids=:{image.fills.First(x => x.type == "IMAGE").imageRef}";
-                // }
-                var treeNodes = new List<FlatNode>();
-                treeNodes.AddRange(TreeNodes);
-                treeNodes.AddRange(MapFigmaNodes(
-                    GetNodes(nodeModel.Node).Select(x => new NodeModel()
-                    {
-                        Node = x
-                    })
-                ));
-
-                TreeNodes = new ObservableCollection<FlatNode>(treeNodes);
-
-                await GeneratePageSourceCode(nodeModel);
-                nodeModel.IsLoaded = true;
+                Console.WriteLine(e);
+            }
+            finally
+            {
                 IsGenerating = false;
+                RedrawRequested?.Invoke();
             }
-
-            SelectedNodeModel = nodeModel;
-            SelectedNodeModel.IsSelected = true;
-
-            RedrawRequested?.Invoke();
         }
 
-        IEnumerable<FlatNode> MapFigmaNodes(IEnumerable<NodeModel> figmaNodes)
+        IEnumerable<FlatNode> MapFigmaNodes(IEnumerable<FigmaNode> figmaNodes)
         {
             if (figmaNodes == null || figmaNodes.Count() == 0)
             {
@@ -207,11 +197,14 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
 
             return figmaNodes.Select(n => new FlatNode
             {
-                Id = n.Node.id,
-                ParentId = n.Node.Parent?.id,
-                Name = string.IsNullOrEmpty(n.Node.name) ? $"Node {n.Node.id}" : n.Node.name,
-                Depth = ComputeDepth(n.Node),
-                Tag = n,
+                Id = n.id,
+                ParentId = n.Parent?.id,
+                Name = string.IsNullOrEmpty(n.name) ? $"Node {n.id}" : n.name,
+                Depth = ComputeDepth(n),
+                Tag = new NodeModel()
+                {
+                    Node = n
+                },
             });
         }
 

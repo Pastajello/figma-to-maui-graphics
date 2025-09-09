@@ -1,4 +1,5 @@
 ﻿using FigmaSharp.Maui.Graphics.Sample.ViewModels;
+using FigmaSharp.Models;
 
 namespace FigmaSharp.Maui.Graphics.Sample
 {
@@ -9,6 +10,15 @@ namespace FigmaSharp.Maui.Graphics.Sample
         public MainPage()
         {
             InitializeComponent();
+            tree.NodeTapped += (s, node) =>
+            {
+                // node.Tag zawiera oryginalny FigmaNode — zrób co chcesz
+                var figma = node.Tag as FigmaNode;
+                // np. open details / go to page / highlight
+            };
+
+            // załóżmy, że masz figmaNodes od Figma API:
+         
         }
 
         protected override void OnAppearing()
@@ -20,8 +30,11 @@ namespace FigmaSharp.Maui.Graphics.Sample
                 VM = vm;
                 vm.DrawableSet -= VmOnDrawableSet;
                 vm.DrawableSet += VmOnDrawableSet;
+              
             }
         }
+        
+        
 
         protected override void OnDisappearing()
         {
@@ -40,6 +53,10 @@ namespace FigmaSharp.Maui.Graphics.Sample
                 drawable.SetGraphicsView(graphicsView);
             }
         }
+        
+     
+// mapowanie
+     
 
         private Point _lastPan;
 
