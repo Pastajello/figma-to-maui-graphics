@@ -78,6 +78,11 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
         public ICommand CompileCommand => new Command(async () => await Compile());
         public ICommand TapNodeCommand => new AsyncRelayCommand<NodeModel>(OnTapNodeCommand);
 
+        partial void OnScaleChanged(float value)
+        {
+            RedrawRequested?.Invoke();
+        }
+
         async Task GenerateCodeAsync()
         {
             DrawableSet?.Invoke();
@@ -197,7 +202,7 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
                     var treeNodes = new List<FlatNode>(TreeNodes);
                     foreach (var fn in newNodes)
                     {
-                        if (_knownIds.Add(fn.Id)) // Add() zwróci true tylko jeśli Id jeszcze nie było
+                        if (_knownIds.Add(fn.Id))
                         {
                             treeNodes.Add(fn);
                         }
