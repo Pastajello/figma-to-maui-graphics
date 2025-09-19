@@ -164,6 +164,8 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
         {
             try
             {
+                Console.WriteLine($"------------------------------------");
+                Console.WriteLine($"Start operation for node: {nodeModel.Node.name}");
                 var watch = new Stopwatch();
                 watch.Start();
                 if (SelectedNodeModel != null)
@@ -178,20 +180,32 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
                     IsGenerating = true;
 
                     await _remoteNodeProvider.LoadAsync(FileId, nodeModel.Node.id, 5);
-
+                    Console.WriteLine("----------------------");
+                    Console.WriteLine("after load in vm");
+                    
+               
+                    
                     nodeModel.Node = _codeRenderer.NodeProvider.Nodes
                         .FirstOrDefault(x => x.id == nodeModel.Node.id);
 
-                    var newNodes = MapFigmaNodes(GetNodes(nodeModel.Node));
-
+                    var nodes = GetNodes(nodeModel.Node);
+                
+                    var newNodes = MapFigmaNodes(nodes);
+                    var watch1 = new Stopwatch();
+                    watch1.Start();
+                    
+                    var treeNodes = new List<FlatNode>(TreeNodes);
                     foreach (var fn in newNodes)
                     {
                         if (_knownIds.Add(fn.Id)) // Add() zwróci true tylko jeśli Id jeszcze nie było
                         {
-                            TreeNodes.Add(fn);
+                            treeNodes.Add(fn);
                         }
                     }
-
+                    TreeNodes = new ObservableCollection<FlatNode>(treeNodes);
+                    watch1.Stop();
+                    var millis1 = watch1.ElapsedMilliseconds;
+                    Console.WriteLine($"TreeNodes: {millis1} ms");
                     await GeneratePageSourceCode(nodeModel);
                     nodeModel.IsLoaded = true;
                 }
@@ -215,6 +229,8 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
 
         IEnumerable<FlatNode> MapFigmaNodes(IEnumerable<FigmaNode> figmaNodes)
         {
+            var watch1 = new Stopwatch();
+            watch1.Start();
             if (figmaNodes == null || !figmaNodes.Any())
                 return Enumerable.Empty<FlatNode>();
 
@@ -227,9 +243,14 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
                 Tag = new NodeModel { Node = n }
             });
 
-            return mapped
+            var a =  mapped
                 .GroupBy(f => f.Id)
                 .Select(g => g.First());
+            watch1.Stop();
+            var millis1 = watch1.ElapsedMilliseconds;
+            Console.WriteLine($"MapFigmaNodes: {millis1} ms");
+
+            return a;
         }
 
         int ComputeDepth(FigmaNode n)
@@ -267,6 +288,10 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
 
         private async Task GeneratePageSourceCode(NodeModel nodeModel)
         {
+            Console.WriteLine("----------------------");
+            Console.WriteLine("GeneratePageSourceCode");
+            var watch = new Stopwatch();
+            watch.Start();
             var stringBuilder = new StringBuilder();
             Log.Add($"Node {nodeModel.Node.id} found successfully.");
 
@@ -283,6 +308,10 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
             nodeModel.CompilationResult = await CompileCodeAsync(code);
 
             Log.Add($"Source Code for page {nodeModel.Name} generated successfully.");
+            
+            watch.Stop();
+            var millis = watch.ElapsedMilliseconds;
+            Console.WriteLine($"Compiling took: {millis} ms");
         }
 
         async Task<CompilationResult> CompileCodeAsync(string code)
