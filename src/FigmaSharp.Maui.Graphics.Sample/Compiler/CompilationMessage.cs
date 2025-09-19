@@ -10,11 +10,6 @@
         public string DisplayMessage =>
             $"{(LineNumber != 0 ? $"[{LineNumber}]" : string.Empty)}{Severity.ToString().ToLowerInvariant()}: {Message}";
 
-        public override string ToString()
-        {
-            return $"{(LineNumber != 0 ? $"[{LineNumber}]" : string.Empty)}{Severity.ToString().ToLowerInvariant()}: {Message}";
-        }
-
         public int StartOffset { get; set; }
 
         public int EndOffset { get; set; }

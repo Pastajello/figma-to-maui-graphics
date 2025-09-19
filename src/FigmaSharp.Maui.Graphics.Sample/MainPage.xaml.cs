@@ -10,15 +10,6 @@ namespace FigmaSharp.Maui.Graphics.Sample
         public MainPage()
         {
             InitializeComponent();
-            tree.NodeTapped += (s, node) =>
-            {
-                // node.Tag zawiera oryginalny FigmaNode — zrób co chcesz
-                var figma = node.Tag as FigmaNode;
-                // np. open details / go to page / highlight
-            };
-
-            // załóżmy, że masz figmaNodes od Figma API:
-         
         }
 
         protected override void OnAppearing()
@@ -33,8 +24,6 @@ namespace FigmaSharp.Maui.Graphics.Sample
               
             }
         }
-        
-        
 
         protected override void OnDisappearing()
         {
@@ -55,9 +44,6 @@ namespace FigmaSharp.Maui.Graphics.Sample
         }
         
      
-// mapowanie
-     
-
         private Point _lastPan;
 
         private void OnPanUpdated(object sender, PanUpdatedEventArgs e)
