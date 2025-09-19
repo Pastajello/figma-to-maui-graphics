@@ -2,24 +2,38 @@
 using FigmaSharp.Maui.Graphics.Sample.Services;
 using FigmaSharp.Services;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Text;
 using System.Windows.Input;
+using CommunityToolkit.Mvvm.ComponentModel;
+using FigmaSharp.Models;
 
 namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
 {
-    public class MainViewModel : BindableObject
+    public partial class FigmaPage : ObservableObject
     {
-        string _token;
-        string _fileId;
+        [ObservableProperty] private string _name;
+        [ObservableProperty] private string _code;
+        [ObservableProperty] private FigmaNode node;
+        [ObservableProperty] private CompilationResult _compilationResult;
+        [ObservableProperty] private bool _isSelected;
+    }
 
-        bool _isGenerating;
-        string _code;
-        ObservableCollection<string> _log;
-
-        readonly Compiler _compiler;
+    public partial class MainViewModel : ObservableObject
+    {
+        [ObservableProperty] private string _token;
+        [ObservableProperty] private string _fileId;
+        [ObservableProperty] private string _code;
+        [ObservableProperty] private bool _isGenerating;
+        [ObservableProperty] private ObservableCollection<string> _log;
+        [ObservableProperty] private ObservableCollection<FigmaPage> _pages;
+        [ObservableProperty] private FigmaPage _selectedPage;
+        private readonly Compiler _compiler;
 
         public MainViewModel()
         {
+            Drawable = new MyDrawable(this);
+            DrawableSet?.Invoke();
 #if DEBUG
             // INSERT YOUR FIGMA ACCESS TOKEN
             Token = "";
@@ -30,66 +44,35 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
             _compiler = new Compiler();
         }
 
-        public string Token
-        {
-            get { return _token; }
-            set
-            {
-                _token = value;
-                OnPropertyChanged();
-            }
-        }
+        public IDrawable Drawable { get; set; }
+        public float OffsetX { get; set; }
+        public float OffsetY { get; set; }
 
-        public string FileId
-        {
-            get { return _fileId; }
-            set
-            {
-                _fileId = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public bool IsGenerating
-        {
-            get { return _isGenerating; }
-            set
-            {
-                _isGenerating = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public string Code
-        {
-            get { return _code; }
-            set
-            {
-                _code = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public ObservableCollection<string> Log
-        {
-            get { return _log; }
-            set
-            {
-                _log = value;
-                OnPropertyChanged();
-            }
-        }
+        public event Action RedrawRequested;
+        public event Action DrawableSet;
 
         public ICommand GenerateCommand => new Command(async () => await GenerateCodeAsync());
         public ICommand ExportCommand => new Command(async () => await Export());
+        public ICommand ChangeSelectedPageCommand => new Command<FigmaPage>(ChangeSelectedPage);
+
+        async void ChangeSelectedPage(FigmaPage page)
+        {
+            SelectedPage.IsSelected = false;
+            SelectedPage = page;
+            SelectedPage.IsSelected = true;
+
+            RedrawRequested?.Invoke();
+        }
 
         async Task GenerateCodeAsync()
         {
+            DrawableSet?.Invoke();
             try
             {
                 if (string.IsNullOrEmpty(Token))
                 {
-                    var message = "In order to obtain the necessary information from Figma, it is necessary to use a Personal Access Token.";
+                    var message =
+                        "In order to obtain the necessary information from Figma, it is necessary to use a Personal Access Token.";
                     Log.Add(message);
                     DialogService.Instance.DisplayAlert("Information", message);
                     return;
@@ -98,11 +81,13 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
                 FigmaApplication.Init(Token);
                 if (string.IsNullOrEmpty(FileId))
                 {
-                    var message = "In order to obtain the necessary information from Figma, it is necessary to use a FileId.";
+                    var message =
+                        "In order to obtain the necessary information from Figma, it is necessary to use a FileId.";
                     Log.Add(message);
                     DialogService.Instance.DisplayAlert("Information", message);
                     return;
                 }
+
                 IsGenerating = true;
                 Log.Add("Request the data to the Figma API.");
 
@@ -119,25 +104,39 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
 
                 Log.Add("Code generator initialized successfully.");
 
-                var stringBuilder = new StringBuilder();
 
                 var node = codeRenderer.NodeProvider.Nodes[0];
+                Pages = new ObservableCollection<FigmaPage>(
+                    codeRenderer.NodeProvider.Nodes.Where(x => x.type == "CANVAS").Select(x => new FigmaPage()
+                    {
+                        Name = x.name,
+                        Node = x,
+                    }));
 
-                Log.Add($"Node {node.id} found successfully.");
 
-                Log.Add("Generating source code...");
+                foreach (var page in Pages)
+                {
+                    var stringBuilder = new StringBuilder();
+                    Log.Add($"Node {page.Node.id} found successfully.");
 
-                var codeNode = new CodeNode(node);
+                    Log.Add($"Generating source code for page {page.Name}...");
 
-                codeRenderer.GetCode(stringBuilder, codeNode);
+                    var codeNode = new CodeNode(page.Node);
 
-                var code = stringBuilder.ToString();
+                    codeRenderer.GetCode(stringBuilder, codeNode);
 
-                Code = code;
+                    var code = stringBuilder.ToString();
 
-                Log.Add("Source Code generated successfully.");
+                    Log.Add($"Source Code for page {page.Name} generated successfully.");
+                    page.Code = code;
+                    page.CompilationResult = await CompileCodeAsync(code);
 
-                await CompileCodeAsync();
+                    Log.Add($"Source Code for page {page.Name} generated successfully.");
+                }
+
+                SelectedPage = Pages?.FirstOrDefault();
+                SelectedPage.IsSelected = true;
+                RedrawRequested?.Invoke();
             }
             catch (Exception ex)
             {
@@ -149,10 +148,10 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
             }
         }
 
-        async Task CompileCodeAsync()
+        async Task<CompilationResult> CompileCodeAsync(string code)
         {
             if (_compiler == null)
-                return;
+                return null;
 
             Log.Add("Compiling the generated source code...");
 
@@ -162,23 +161,11 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
                 public void Draw(ICanvas canvas, RectF dirtyRect)
                 {{
                 {0}
-                }}", Code);
+                }}", code);
 
             var compilationResult = await _compiler.CompileAsync(sourceCode);
 
-            if (compilationResult.HasErrors)
-            {
-                var compilationMessages = compilationResult.CompilationMessages;
-
-                foreach (var error in compilationMessages)
-                {
-                    Log.Add($"{error.DisplayMessage}");
-                }
-            }
-            else
-            {
-                Log.Add("Compilation completed successfully.");
-            }
+            return compilationResult;
         }
 
         async Task Export()
@@ -203,7 +190,7 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
                 Log.Add(message);
                 DialogService.Instance.DisplayAlert("Information", message);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Log.Add(ex.Message);
             }
