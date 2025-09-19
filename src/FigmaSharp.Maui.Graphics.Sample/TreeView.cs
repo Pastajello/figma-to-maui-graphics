@@ -1,3 +1,4 @@
+using System.Collections.Specialized;
 using System.Windows.Input;
 using FigmaSharp.Maui.Graphics.Sample.ViewModels;
 using Grid = Microsoft.Maui.Controls.Grid;
@@ -7,17 +8,19 @@ namespace FigmaSharp.Maui.Graphics.Sample
 {
     public class FlatNode
     {
-        public string Id { get; set; } 
+        public string Id { get; set; }
         public string ParentId { get; set; }
-        public string Name { get; set; } 
-        public int Depth { get; set; } 
+        public string Name { get; set; }
+        public int Depth { get; set; }
         public object Tag { get; set; }
     }
+
     public class TreeNode
     {
         public FlatNode Model { get; set; }
         public List<TreeNode> Children { get; } = new List<TreeNode>();
     }
+
     public class ExplorerTreeView : ContentView
     {
         public static readonly BindableProperty ItemsSourceProperty =
@@ -25,14 +28,18 @@ namespace FigmaSharp.Maui.Graphics.Sample
                 nameof(ItemsSource),
                 typeof(IEnumerable<FlatNode>),
                 typeof(ExplorerTreeView),
-                propertyChanged: (b, o, n) => ((ExplorerTreeView)b).OnItemsSourceChanged((IEnumerable<FlatNode>)n));
+                propertyChanged: (b, o, n) =>
+                    ((ExplorerTreeView)b).OnItemsSourceChanged((IEnumerable<FlatNode>)n));
 
         public IEnumerable<FlatNode> ItemsSource
         {
             get => (IEnumerable<FlatNode>)GetValue(ItemsSourceProperty);
             set => SetValue(ItemsSourceProperty, value);
         }
-        
+
+        private INotifyCollectionChanged _observable;
+        private VerticalStackLayout _rootStack;
+
         public static readonly BindableProperty RowTappedCommandProperty =
             BindableProperty.Create(
                 nameof(RowTappedCommand),
@@ -51,28 +58,46 @@ namespace FigmaSharp.Maui.Graphics.Sample
 
         public ExplorerTreeView()
         {
-            // start with empty content
-            Content = new ScrollView
-            {
-                Content = new VerticalStackLayout { Spacing = 0 }
-            };
+            _rootStack = new VerticalStackLayout { Spacing = 0 };
+            Content = new ScrollView { Content = _rootStack };
         }
 
         void OnItemsSourceChanged(IEnumerable<FlatNode> flat)
         {
-            var rootStack = new VerticalStackLayout { Spacing = 0 };
-            if (flat == null)
+            if (_observable != null)
+                _observable.CollectionChanged -= OnCollectionChanged;
+
+            _observable = flat as INotifyCollectionChanged;
+
+            if (_observable != null)
+                _observable.CollectionChanged += OnCollectionChanged;
+
+            RebuildTree(flat);
+        }
+
+        private void OnCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            if (e.Action == NotifyCollectionChangedAction.Add)
             {
-                ((ScrollView)Content).Content = rootStack;
-                return;
+                foreach (FlatNode fn in e.NewItems)
+                    AddNodeToTree(fn);
             }
+            else
+            {
+                // reset, remove itp. -> prościej przebudować
+                RebuildTree(ItemsSource);
+            }
+        }
+
+        void RebuildTree(IEnumerable<FlatNode> flat)
+        {
+            _rootStack.Children.Clear();
+
+            if (flat == null) return;
 
             var nodes = BuildHierarchy(flat);
-            // render
             foreach (var r in nodes)
-                RenderNode(r, rootStack);
-
-            ((ScrollView)Content).Content = rootStack;
+                RenderNode(r, _rootStack);
         }
 
         List<TreeNode> BuildHierarchy(IEnumerable<FlatNode> flat)
@@ -106,7 +131,8 @@ namespace FigmaSharp.Maui.Graphics.Sample
             {
                 foreach (var n in list)
                 {
-                    n.Children.Sort((a, b) => string.Compare(a.Model.Name, b.Model.Name, StringComparison.OrdinalIgnoreCase));
+                    n.Children.Sort((a, b) =>
+                        string.Compare(a.Model.Name, b.Model.Name, StringComparison.OrdinalIgnoreCase));
                     SortRecursively(n.Children);
                 }
             }
@@ -119,7 +145,6 @@ namespace FigmaSharp.Maui.Graphics.Sample
         {
             var depth = Math.Max(0, node.Model.Depth);
 
-            // container for one row
             var row = new Grid
             {
                 Padding = new Thickness(8, 6, 8, 6),
@@ -127,7 +152,7 @@ namespace FigmaSharp.Maui.Graphics.Sample
                 ColumnDefinitions =
                 {
                     new ColumnDefinition { Width = GridLength.Auto }, // toggle
-                    new ColumnDefinition { Width = GridLength.Auto }, // icon (optional)
+                    new ColumnDefinition { Width = GridLength.Auto }, // icon
                     new ColumnDefinition { Width = GridLength.Star }  // label
                 },
                 Margin = new Thickness(depth * 16, 0, 0, 0)
@@ -142,8 +167,7 @@ namespace FigmaSharp.Maui.Graphics.Sample
                     FontSize = 30,
                     WidthRequest = 28,
                     HeightRequest = 28,
-                    Padding = new Thickness(0),
-                    Margin = new Thickness(0),
+                    Padding = 0,
                     BorderColor = Colors.Transparent,
                     BackgroundColor = Colors.Transparent,
                     TextColor = Colors.White,
@@ -154,12 +178,9 @@ namespace FigmaSharp.Maui.Graphics.Sample
             }
             else
             {
-                // spacer
-                var spacer = new BoxView { WidthRequest = 28, HeightRequest = 1, Opacity = 0 };
-                row.Add(spacer, 0, 0);
+                row.Add(new BoxView { WidthRequest = 28, Opacity = 0 }, 0, 0);
             }
 
-            // optional icon - file/folder (simple text)
             var iconLabel = new Label
             {
                 Text = node.Children.Any() ? "📁" : "📄",
@@ -169,7 +190,6 @@ namespace FigmaSharp.Maui.Graphics.Sample
             };
             row.Add(iconLabel, 1, 0);
 
-            // label with tap gesture
             var lbl = new Label
             {
                 Text = node.Model.Name,
@@ -179,62 +199,60 @@ namespace FigmaSharp.Maui.Graphics.Sample
             row.Add(lbl, 2, 0);
 
             var tap = new TapGestureRecognizer();
-            tap.Tapped += (s, e) =>
+            tap.Tapped += async (s, e) =>
             {
                 SelectedNode = node.Model;
                 RowTappedCommand?.Execute(SelectedNode.Tag as NodeModel);
                 NodeTapped?.Invoke(this, node.Model);
-                Device.BeginInvokeOnMainThread(async () =>
-                {
-                    var original = row.BackgroundColor;
-                    row.BackgroundColor = Colors.Red;
-                    await Task.Delay(100);
-                    row.BackgroundColor = original;
-                });
+
+                var original = row.BackgroundColor;
+                row.BackgroundColor = Colors.Red;
+                await Task.Delay(100);
+                row.BackgroundColor = original;
             };
             row.GestureRecognizers.Add(tap);
 
             parentLayout.Children.Add(row);
 
-            VerticalStackLayout childrenContainer = null;
             if (node.Children.Any())
             {
-                childrenContainer = new VerticalStackLayout { Spacing = 0,
-                    IsVisible = false };
+                var childrenContainer = new VerticalStackLayout { Spacing = 0, IsVisible = false };
                 parentLayout.Children.Add(childrenContainer);
 
-                // toggling behavior
                 toggle.Clicked += (s, e) =>
                 {
                     var now = !childrenContainer.IsVisible;
                     childrenContainer.IsVisible = now;
                     toggle.Text = now ? "▼" : "▶";
 
-                    // optional lazy render: if first time visible and container empty -> render children
                     if (now && childrenContainer.Children.Count == 0)
                     {
                         foreach (var child in node.Children)
                             RenderNode(child, childrenContainer);
                     }
                 };
-
-                // we don't render children until expanded (lazy) - good for big trees
             }
         }
 
-        // Public helper: expand all (caveat: will force rendering)
+        void AddNodeToTree(FlatNode fn)
+        {
+            // Na razie najprościej: rebuild całego drzewa
+            // Można zoptymalizować i szukać konkretnego rodzica
+            RebuildTree(ItemsSource);
+        }
+
         public void ExpandAll()
         {
-            if (Content is ScrollView sc && sc.Content is Layout root)
-                ExpandCollapseRec(root, true);
+            if (_rootStack != null)
+                ExpandCollapseRec(_rootStack, true);
         }
-        
+
         public void CollapseAll()
         {
-            if (Content is ScrollView sc && sc.Content is Layout root)
-                ExpandCollapseRec(root, false);
+            if (_rootStack != null)
+                ExpandCollapseRec(_rootStack, false);
         }
-        
+
         void ExpandCollapseRec(Layout layout, bool expand)
         {
             foreach (var child in layout.Children)

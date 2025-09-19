@@ -24,6 +24,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -63,7 +64,9 @@ namespace FigmaSharp.Services
                 Nodes.Clear();
 
                 var contentTemplate = await GetContentById(file, nodeId, depth);
-
+                Debug.WriteLine("----------------------");
+                Debug.WriteLine(contentTemplate);
+                Debug.WriteLine("----------------------");
                 //parse the json into a model format
                 Response = WebApiHelper.GetFigmaResponseFromFileContent(contentTemplate);
 
@@ -125,6 +128,8 @@ namespace FigmaSharp.Services
 
         private async Task LoadImages()
         {
+            var watch = Stopwatch.StartNew();
+            
             var images = SearchImageNodes();
             var imageRequests = new List<IImageNodeRequest>();
             if (images == null || images.Count() < 1)
@@ -136,9 +141,21 @@ namespace FigmaSharp.Services
                 var imageRequest = CreateEmptyImageNodeRequest(image);
                 imageRequests.Add(imageRequest);
             }
-            
+            watch.Stop();
+
+
+            var milis = watch.ElapsedMilliseconds;
+            Console.WriteLine($"Elapsed on prepare: {milis}");
+            watch.Restart();
             await AppContext.Api.ProcessDownloadImagesAsync(File, imageRequests.ToArray());
+            watch.Stop();
+            milis = watch.ElapsedMilliseconds;
+            Console.WriteLine($"Elapsed on download: {milis}");
+            watch.Restart();
             SaveResourceFiles("images", ".png",imageRequests.ToArray());
+            watch.Stop();
+            milis = watch.ElapsedMilliseconds;
+            Console.WriteLine($"Elapsed on save: {milis}");
         }
 
         public FigmaNode[] GetMainGeneratedLayers()

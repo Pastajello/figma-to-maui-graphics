@@ -2,6 +2,7 @@
 using FigmaSharp.Maui.Graphics.Sample.Services;
 using FigmaSharp.Services;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Text;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -42,6 +43,7 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
         [ObservableProperty] private NodeModel? _selectedNodeModel;
         [ObservableProperty] private float _scale = 1;
         [ObservableProperty] private ObservableCollection<FlatNode> _treeNodes = new();
+        private readonly HashSet<string> _knownIds = new();
 
         private readonly Compiler _compiler;
         private RemoteNodeProvider _remoteNodeProvider;
@@ -132,6 +134,16 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
                         page.Node
                     }));
                 }
+                
+                _knownIds.Clear();
+
+                foreach (var fn in treeNodes)
+                {
+                    if (_knownIds.Add(fn.Id))
+                    {
+                        
+                    }
+                }
 
                 TreeNodes = new ObservableCollection<FlatNode>(treeNodes);
 
@@ -152,6 +164,8 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
         {
             try
             {
+                var watch = new Stopwatch();
+                watch.Start();
                 if (SelectedNodeModel != null)
                 {
                     SelectedNodeModel.IsSelected = false;
@@ -162,13 +176,21 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
                 if (!nodeModel.IsLoaded)
                 {
                     IsGenerating = true;
-                    await _remoteNodeProvider.LoadAsync(FileId, nodeModel.Node.id, 5);
-                    nodeModel.Node = _codeRenderer.NodeProvider.Nodes.FirstOrDefault(x => x.id == nodeModel.Node.id);
-                    var treeNodes = new List<FlatNode>();
-                    treeNodes.AddRange(TreeNodes);
-                    treeNodes.AddRange(MapFigmaNodes(GetNodes(nodeModel.Node)));
 
-                    TreeNodes = new ObservableCollection<FlatNode>(treeNodes);
+                    await _remoteNodeProvider.LoadAsync(FileId, nodeModel.Node.id, 5);
+
+                    nodeModel.Node = _codeRenderer.NodeProvider.Nodes
+                        .FirstOrDefault(x => x.id == nodeModel.Node.id);
+
+                    var newNodes = MapFigmaNodes(GetNodes(nodeModel.Node));
+
+                    foreach (var fn in newNodes)
+                    {
+                        if (_knownIds.Add(fn.Id)) // Add() zwróci true tylko jeśli Id jeszcze nie było
+                        {
+                            TreeNodes.Add(fn);
+                        }
+                    }
 
                     await GeneratePageSourceCode(nodeModel);
                     nodeModel.IsLoaded = true;
@@ -176,6 +198,9 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
 
                 SelectedNodeModel = nodeModel;
                 SelectedNodeModel.IsSelected = true;
+                watch.Stop();
+                var millis = watch.ElapsedMilliseconds;
+                Console.WriteLine($"All time in method: {millis} ms");
             }
             catch (Exception e)
             {
@@ -190,22 +215,21 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
 
         IEnumerable<FlatNode> MapFigmaNodes(IEnumerable<FigmaNode> figmaNodes)
         {
-            if (figmaNodes == null || figmaNodes.Count() == 0)
-            {
-                return new List<FlatNode>();
-            }
+            if (figmaNodes == null || !figmaNodes.Any())
+                return Enumerable.Empty<FlatNode>();
 
-            return figmaNodes.Select(n => new FlatNode
+            var mapped = figmaNodes.Select(n => new FlatNode
             {
                 Id = n.id,
                 ParentId = n.Parent?.id,
                 Name = string.IsNullOrEmpty(n.name) ? $"Node {n.id}" : n.name,
                 Depth = ComputeDepth(n),
-                Tag = new NodeModel()
-                {
-                    Node = n
-                },
+                Tag = new NodeModel { Node = n }
             });
+
+            return mapped
+                .GroupBy(f => f.Id)
+                .Select(g => g.First());
         }
 
         int ComputeDepth(FigmaNode n)

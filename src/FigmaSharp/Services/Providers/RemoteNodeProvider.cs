@@ -58,7 +58,7 @@ namespace FigmaSharp.Services
             }
         }
 
-        void ProcessRemoteImages(List<ViewNode> imageFigmaNodes, ImageFormat imageFormat)
+        public async Task ProcessRemoteImages(List<ViewNode> imageFigmaNodes, ImageFormat imageFormat)
         {
             try
             {
@@ -78,7 +78,7 @@ namespace FigmaSharp.Services
                     var ids = vectors.Select(s => CreateEmptyImageNodeRequest(s.Node))
                         .ToArray();
 
-                    var figmaImageResponse = AppContext.Api.GetImagesAsync(File, ids, imageFormat).GetAwaiter().GetResult();
+                    var figmaImageResponse = await AppContext.Api.GetImagesAsync(File, ids, imageFormat);
                     if (figmaImageResponse != null)
                     {
                         foreach (var image in figmaImageResponse.images)

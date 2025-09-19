@@ -23,6 +23,7 @@
 // USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 using System;
+using System.Diagnostics;
 using System.Text;
 using System.Linq;
 using FigmaSharp.Helpers;
@@ -152,6 +153,8 @@ namespace FigmaSharp
 
         async Task<string> GetContentUrlAsync<T>(T figmaQuery, Func<T, string> handler) where T : FigmaApiBaseQuery
         {
+            Stopwatch watch = new Stopwatch();
+            watch.Start();
             var token = string.IsNullOrEmpty(figmaQuery.PersonalAccessToken) ? Token : figmaQuery.PersonalAccessToken;
 
             var query = handler(figmaQuery);
@@ -163,7 +166,12 @@ namespace FigmaSharp
 
             var finalquery = query;
             var response = await client.GetAsync(finalquery);
+            watch.Stop();
+            Console.WriteLine($"Getting response took: {watch.ElapsedMilliseconds}");
+            watch.Restart();
             var content = await response.Content.ReadAsStringAsync();
+            watch.Stop();
+            Console.WriteLine($"Reading response took: {watch.ElapsedMilliseconds}");
             return content;
         }
 
