@@ -22,6 +22,8 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 // USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+using System.Collections.Generic;
+
 namespace FigmaSharp.Models
 {
     public interface IAbsoluteBoundingBox
@@ -36,7 +38,7 @@ namespace FigmaSharp.Models
 
     public interface IFigmaNodeContainer
     {
-        FigmaNode[] children { get; set; }
+        List<FigmaNode> children { get; set; }
     }
 
     public interface IFigmaDocumentContainer : IFigmaNodeContainer, IAbsoluteBoundingBox

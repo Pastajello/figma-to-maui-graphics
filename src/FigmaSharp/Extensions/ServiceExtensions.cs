@@ -59,7 +59,7 @@ namespace FigmaSharp
         public static Rectangle GetCurrentBounds(this FigmaCanvas canvas)
         {
             Rectangle contentRect = Rectangle.Zero;
-            for (int i = 0; i < canvas.children.Length; i++)
+            for (int i = 0; i < canvas.children.Count; i++)
             {
                 if (canvas.children[i] is IAbsoluteBoundingBox box)
                 {

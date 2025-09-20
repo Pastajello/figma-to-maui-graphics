@@ -305,7 +305,7 @@ namespace FigmaSharp.Services
         {
             if (node.Node is IFigmaNodeContainer nodeContainer)
             {
-                return nodeContainer.children;
+                return nodeContainer.children.ToArray();
             }
 
             return new FigmaNode[0];

@@ -104,7 +104,12 @@ namespace FigmaSharp.Helpers
         {
             return JsonConvert.DeserializeObject<FigmaFileResponse> (figmaContent, new FigmaResponseConverter ());
         }
-
+        
+        public static FigmaNodeResponse GetFigmaResponseFromNodeContent (string figmaContent)
+        {
+            return JsonConvert.DeserializeObject<FigmaNodeResponse>(figmaContent, new FigmaResponseConverter());
+        }
+        
         public static FigmaFileVersionResponse GetFigmaResponseFromFileVersionContent (string figmaVersionContent)
         {
             return JsonConvert.DeserializeObject<FigmaFileVersionResponse> (figmaVersionContent);

@@ -184,7 +184,7 @@ namespace FigmaSharp.Models
         public bool isMask { get; set; }
 
         [DisplayName("Children")]
-        public FigmaNode[] children { get; set; }
+        public List<FigmaNode> children { get; set; }
 
         [DisplayName("Strokes")]
         public FigmaPaint[] strokes { get; set; }
@@ -360,7 +360,7 @@ namespace FigmaSharp.Models
     {
         [Category("General")]
         [DisplayName("Children")]
-        public FigmaNode[] children { get; set; }
+        public List<FigmaNode> children { get; set; }
 
         [Category("General")]
         [DisplayName("Boolean Operation")]
@@ -392,7 +392,7 @@ namespace FigmaSharp.Models
 
         [Category("General")]
         [DisplayName("Children")]
-        public FigmaNode[] children { get; set; }
+        public List<FigmaNode> children { get; set; }
 
         [Category("General")]
         [DisplayName("Absolute BoundingBox")]

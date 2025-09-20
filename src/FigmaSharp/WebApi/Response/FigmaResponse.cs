@@ -55,6 +55,9 @@ namespace FigmaSharp.Models
         public string key { get; set; }
         public string name { get; set; }
         public string description { get; set; }
+        public bool remote { get; set; }
+        public string componentSetId { get; set; }
+        public List<object> documentationLinks { get; set; }
     }
 
     public class FigmaStyle

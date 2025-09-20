@@ -53,28 +53,33 @@ namespace FigmaSharp.Services
         public string FigmaFileId { get; set; }
 
         public Task LoadAsync(string file) => Load(file);
-        public Task LoadAsync(string file, string nodeId, int depth) => LoadWithNodeId(file, nodeId, depth);
+        public Task LoadAsync(string file, string nodeId,FigmaNode figmaNode, int depth) => LoadWithNodeId(file, nodeId,figmaNode, depth);
 
-        private async Task LoadWithNodeId(string file, string nodeId, int depth)
+        private async Task LoadWithNodeId(string file, string nodeId,FigmaNode node, int depth)
         {
             this.FigmaFileId = file;
 
             ImageProcessed = false;
             try
             {
-                Nodes.Clear();
-
+                Console.WriteLine($"LoadWithNodeId");
                 var contentTemplate = await GetContentById(file, nodeId, depth);
-                Debug.WriteLine("----------------------");
-                Debug.WriteLine(contentTemplate);
-                Debug.WriteLine("----------------------");
                 //parse the json into a model format
-                Response = WebApiHelper.GetFigmaResponseFromFileContent(contentTemplate);
+                var response = WebApiHelper.GetFigmaResponseFromNodeContent(contentTemplate);
 
                 //proceses all the views recursively
-                foreach (var item in Response.document.children)
-                    ProcessNodeRecursively(item, null);
-                
+                foreach (var bigNode in response.nodes)
+                {
+                    foreach (var child in bigNode.Value.document.children)
+                    {
+                        if (node is IFigmaNodeContainer container)
+                        {
+                            container.children.Add(child);
+                        }
+                        ProcessNodeRecursively(child, node);
+                    }
+                }
+
                 await LoadImages();
             }
             catch (System.Net.WebException ex)
@@ -110,7 +115,7 @@ namespace FigmaSharp.Services
                 foreach (var item in Response.document.children)
                     ProcessNodeRecursively(item, null);
 
-                LoadImages();
+                await LoadImages();
             }
             catch (System.Net.WebException ex)
             {
@@ -130,18 +135,20 @@ namespace FigmaSharp.Services
         private async Task LoadImages()
         {
             var watch = Stopwatch.StartNew();
-            
+
             var images = SearchImageNodes();
             var imageRequests = new List<IImageNodeRequest>();
             if (images == null || images.Count() < 1)
             {
                 return;
             }
+
             foreach (var image in images)
             {
                 var imageRequest = CreateEmptyImageNodeRequest(image);
                 imageRequests.Add(imageRequest);
             }
+
             watch.Stop();
 
 
@@ -153,7 +160,7 @@ namespace FigmaSharp.Services
             milis = watch.ElapsedMilliseconds;
             Console.WriteLine($"Elapsed on download: {milis}");
             watch.Restart();
-            await SaveResourceFilesAsync("images", ".png",imageRequests.ToArray());
+            await SaveResourceFilesAsync("images", ".png", imageRequests.ToArray());
             watch.Stop();
             milis = watch.ElapsedMilliseconds;
             Console.WriteLine($"Elapsed on save: {milis}");
@@ -214,6 +221,24 @@ namespace FigmaSharp.Services
 
             return Nodes.FirstOrDefault(s => s.name == name);
         }
+
+        // void ProcessNodeRecursively(Node node, Node parent)
+        // {
+        //     node.Parent = parent;
+        //     Nodes.Add(node);
+        //
+        //     if (node is FigmaInstance instance)
+        //     {
+        //         if (Response.components.TryGetValue(instance.componentId, out var figmaComponent))
+        //             instance.Component = figmaComponent;
+        //     }
+        //
+        //     if (node is IFigmaNodeContainer nodeContainer)
+        //     {
+        //         foreach (var item in nodeContainer.children)
+        //             ProcessNodeRecursively(item, node);
+        //     }
+        // }
 
 
         void ProcessNodeRecursively(FigmaNode node, FigmaNode parent)
@@ -284,7 +309,7 @@ namespace FigmaSharp.Services
         }
 
         #region Image Resources
-        
+
         private static readonly HttpClient _httpClient = new HttpClient();
 
         public async Task SaveResourceFilesAsync(

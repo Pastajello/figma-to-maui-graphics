@@ -140,14 +140,13 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
                         page.Node
                     }));
                 }
-                
+
                 _knownIds.Clear();
 
                 foreach (var fn in treeNodes)
                 {
                     if (_knownIds.Add(fn.Id))
                     {
-                        
                     }
                 }
 
@@ -171,7 +170,7 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
             try
             {
                 Console.WriteLine($"------------------------------------");
-                Console.WriteLine($"Start operation for node: {nodeModel.Node.name}");
+                Console.WriteLine($"Start operation for node: {nodeModel?.Node?.name}");
                 var watch = new Stopwatch();
                 watch.Start();
                 if (SelectedNodeModel != null)
@@ -185,15 +184,16 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
                 {
                     IsGenerating = true;
 
-                    await _remoteNodeProvider.LoadAsync(FileId, nodeModel.Node.id, 5);
-                    
+                    await _remoteNodeProvider.LoadAsync(FileId, nodeModel.Node.id,nodeModel?.Node, 2);
+                    Console.WriteLine($"after load");
+
                     nodeModel.Node = _codeRenderer.NodeProvider.Nodes
                         .FirstOrDefault(x => x.id == nodeModel.Node.id);
 
                     var nodes = GetNodes(nodeModel.Node);
-                
+
                     var newNodes = MapFigmaNodes(nodes);
-                    
+
                     var treeNodes = new List<FlatNode>(TreeNodes);
                     foreach (var fn in newNodes)
                     {
@@ -202,6 +202,7 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
                             treeNodes.Add(fn);
                         }
                     }
+
                     TreeNodes = new ObservableCollection<FlatNode>(treeNodes);
                     await GeneratePageSourceCode(nodeModel);
                     nodeModel.IsLoaded = true;
@@ -229,20 +230,27 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
             if (figmaNodes == null || !figmaNodes.Any())
                 return Enumerable.Empty<FlatNode>();
 
-            var mapped = figmaNodes.Select(n => new FlatNode
+            var nodes = new List<FlatNode>();
+            foreach (var node in figmaNodes)
             {
-                Id = n.id,
-                ParentId = n.Parent?.id,
-                Name = string.IsNullOrEmpty(n.name) ? $"Node {n.id}" : n.name,
-                Depth = ComputeDepth(n),
-                Tag = new NodeModel { Node = n }
-            });
+                if (node != null)
+                {
+                    nodes.Add(new FlatNode
+                    {
+                        Id = node.id,
+                        ParentId = node.Parent?.id,
+                        Name = string.IsNullOrEmpty(node.name) ? $"Node {node.id}" : node.name,
+                        Depth = ComputeDepth(node),
+                        Tag = new NodeModel { Node = node }
+                    });
+                }
+            }
 
-            var a =  mapped
+            var groupedNodes = nodes
                 .GroupBy(f => f.Id)
                 .Select(g => g.First());
 
-            return a;
+            return groupedNodes;
         }
 
         int ComputeDepth(FigmaNode n)
