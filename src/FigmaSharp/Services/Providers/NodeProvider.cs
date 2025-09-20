@@ -28,6 +28,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 using FigmaSharp.Helpers;
 using FigmaSharp.Models;
@@ -49,14 +50,14 @@ namespace FigmaSharp.Services
             ImageLinksProcessed?.Invoke(this, new EventArgs());
         }
 
-        public string File { get; set; }
+        public string FigmaFileId { get; set; }
 
         public Task LoadAsync(string file) => Load(file);
         public Task LoadAsync(string file, string nodeId, int depth) => LoadWithNodeId(file, nodeId, depth);
 
         private async Task LoadWithNodeId(string file, string nodeId, int depth)
         {
-            this.File = file;
+            this.FigmaFileId = file;
 
             ImageProcessed = false;
             try
@@ -93,7 +94,7 @@ namespace FigmaSharp.Services
 
         public async Task Load(string file)
         {
-            this.File = file;
+            this.FigmaFileId = file;
 
             ImageProcessed = false;
             try
@@ -147,12 +148,12 @@ namespace FigmaSharp.Services
             var milis = watch.ElapsedMilliseconds;
             Console.WriteLine($"Elapsed on prepare: {milis}");
             watch.Restart();
-            await AppContext.Api.ProcessDownloadImagesAsync(File, imageRequests.ToArray());
+            await AppContext.Api.ProcessDownloadImagesAsync(FigmaFileId, imageRequests.ToArray());
             watch.Stop();
             milis = watch.ElapsedMilliseconds;
             Console.WriteLine($"Elapsed on download: {milis}");
             watch.Restart();
-            SaveResourceFiles("images", ".png",imageRequests.ToArray());
+            await SaveResourceFilesAsync("images", ".png",imageRequests.ToArray());
             watch.Stop();
             milis = watch.ElapsedMilliseconds;
             Console.WriteLine($"Elapsed on save: {milis}");
@@ -283,8 +284,12 @@ namespace FigmaSharp.Services
         }
 
         #region Image Resources
+        
+        private static readonly HttpClient _httpClient = new HttpClient();
 
-        public virtual void SaveResourceFiles(string destinationDirectory, string format,
+        public async Task SaveResourceFilesAsync(
+            string destinationDirectory,
+            string format,
             IImageNodeRequest[] downloadImages)
         {
             if (!Directory.Exists(destinationDirectory))
@@ -292,6 +297,8 @@ namespace FigmaSharp.Services
                 var destDir = Directory.CreateDirectory(destinationDirectory);
                 Console.WriteLine(destDir.FullName);
             }
+
+            var downloadTasks = new List<Task>();
 
             foreach (var downloadImage in downloadImages)
             {
@@ -302,24 +309,38 @@ namespace FigmaSharp.Services
 
                     string customNodeName = downloadImage.GetOutputFileName(imageScale.Scale);
                     var fileName = string.Concat(customNodeName, format);
-                    var fullPath = Path.Combine(destinationDirectory, $"image_{fileName.Replace(":","_").Replace(";", "_")}");
+                    var safeFileName = $"image_{fileName.Replace(":", "_").Replace(";", "_")}";
+                    var fullPath = Path.Combine(destinationDirectory, safeFileName);
 
-                    if (System.IO.File.Exists(fullPath))
-                        System.IO.File.Delete(fullPath);
+                    // if file exists - lucky, go to the nexy
+                    if (File.Exists(fullPath))
+                    {
+                        continue;
+                    }
 
-                    try
-                    {
-                        using (System.Net.WebClient client = new System.Net.WebClient())
-                            client.DownloadFile(new Uri(imageScale.Url), fullPath);
-                    }
-                    catch (Exception ex)
-                    {
-                        LoggingService.LogError("[FIGMA] Error.", ex);
-                    }
+                    downloadTasks.Add(DownloadFileAsync(imageScale.Url, fullPath));
                 }
             }
 
-            ;
+            await Task.WhenAll(downloadTasks);
+        }
+
+        private static async Task DownloadFileAsync(string url, string destinationPath)
+        {
+            try
+            {
+                using var response = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+                response.EnsureSuccessStatusCode();
+
+                await using var stream = await response.Content.ReadAsStreamAsync();
+                await using var fileStream = File.Create(destinationPath);
+
+                await stream.CopyToAsync(fileStream);
+            }
+            catch (Exception ex)
+            {
+                LoggingService.LogError("[FIGMA] Error while downloading file.", ex);
+            }
         }
 
         public virtual bool RendersAsImage(FigmaNode figmaNode)

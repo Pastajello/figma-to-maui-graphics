@@ -105,6 +105,7 @@
                     </ScrollView>
                     <CollectionView
                         Grid.Row="2"
+                        IsVisible="{Binding SelectedNodeModel.CompilationResult.HasErrors}"
                         ItemsSource="{Binding SelectedNodeModel.CompilationResult.CompilationMessages}"
                         Style="{StaticResource LogListStyle}">
                         <CollectionView.ItemTemplate>

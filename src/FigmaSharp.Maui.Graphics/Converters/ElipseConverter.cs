@@ -9,13 +9,14 @@ namespace FigmaSharp.Maui.Graphics.Converters
 {
     internal class ElipseConverter : ElipseConverterBase
     {
-        public override string ConvertToCode(CodeNode currentNode, CodeNode parentNode, ICodeRenderService rendererService)
+        public override string ConvertToCode(CodeNode currentNode, CodeNode parentNode,
+            ICodeRenderService rendererService)
         {
             if (currentNode.Node is not FigmaElipse elipseNode)
             {
                 return string.Empty;
             }
-           
+
             StringBuilder builder = new StringBuilder();
 
             builder.AppendLine("canvas.SaveState();");
@@ -36,23 +37,28 @@ namespace FigmaSharp.Maui.Graphics.Converters
                     if (backgroundPaint.color != null)
                     {
                         builder.AppendLine($"canvas.FillColor  = {backgroundPaint.color.ToCodeString()};");
-                    
+
                         builder.AppendLine($"canvas.Alpha  = {backgroundPaint.color.A};");
                     }
 
                     if (backgroundPaint.gradientStops != null)
                     {
                         if (backgroundPaint.type.Equals("GRADIENT_LINEAR", StringComparison.CurrentCultureIgnoreCase))
-                            builder.AppendLine($"canvas.SetFillPaint({backgroundPaint.gradientStops.ToLinearGradientPaint()}, new RectF({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f));");
+                            builder.AppendLine(
+                                $"canvas.SetFillPaint({backgroundPaint.gradientStops.ToLinearGradientPaint()}, new RectF({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f));");
 
                         if (backgroundPaint.type.Equals("GRADIENT_RADIAL", StringComparison.CurrentCultureIgnoreCase))
-                            builder.AppendLine($"canvas.SetFillPaint({backgroundPaint.gradientStops.ToRadialGradientPaint()}, new RectF({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f));");
+                            builder.AppendLine(
+                                $"canvas.SetFillPaint({backgroundPaint.gradientStops.ToRadialGradientPaint()}, new RectF({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f));");
                     }
 
                     if (backgroundPaint.imageRef != null)
-                        builder.AppendLine($"canvas.FillColor  = Colors.White;");
+                    {
+                        HandleImageRef(builder, bounds, elipseNode.id);
+                    }
 
-                    builder.AppendLine(string.Format($"canvas.FillEllipse({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f);"));
+                    builder.AppendLine(string.Format(
+                        $"canvas.FillEllipse({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f);"));
                 }
             }
 
@@ -70,10 +76,12 @@ namespace FigmaSharp.Maui.Graphics.Converters
                 if (strokePaint.gradientStops != null)
                 {
                     if (strokePaint.type.Equals("GRADIENT_LINEAR", StringComparison.CurrentCultureIgnoreCase))
-                        builder.AppendLine($"canvas.SetFillPaint({strokePaint.gradientStops.ToLinearGradientPaint()}, new RectF({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f));");
+                        builder.AppendLine(
+                            $"canvas.SetFillPaint({strokePaint.gradientStops.ToLinearGradientPaint()}, new RectF({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f));");
 
                     if (strokePaint.type.Equals("GRADIENT_RADIAL", StringComparison.CurrentCultureIgnoreCase))
-                        builder.AppendLine($"canvas.SetFillPaint({strokePaint.gradientStops.ToRadialGradientPaint()}, new RectF({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f));");
+                        builder.AppendLine(
+                            $"canvas.SetFillPaint({strokePaint.gradientStops.ToRadialGradientPaint()}, new RectF({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f));");
                 }
 
                 if (strokePaint.imageRef != null)
@@ -85,7 +93,8 @@ namespace FigmaSharp.Maui.Graphics.Converters
                     builder.AppendLine($"canvas.StrokeSize = {strokeSize};");
                 }
 
-                builder.AppendLine(string.Format($"canvas.DrawEllipse({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f);"));
+                builder.AppendLine(string.Format(
+                    $"canvas.DrawEllipse({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f);"));
             }
 
             builder.AppendLine("canvas.RestoreState();");
@@ -93,7 +102,8 @@ namespace FigmaSharp.Maui.Graphics.Converters
             return builder.ToString();
         }
 
-        public override Views.IView ConvertToView(FigmaNode currentNode, ViewNode parent, ViewRenderService rendererService)
+        public override Views.IView ConvertToView(FigmaNode currentNode, ViewNode parent,
+            ViewRenderService rendererService)
         {
             throw new NotImplementedException();
         }

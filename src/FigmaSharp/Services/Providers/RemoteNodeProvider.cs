@@ -78,7 +78,7 @@ namespace FigmaSharp.Services
                     var ids = vectors.Select(s => CreateEmptyImageNodeRequest(s.Node))
                         .ToArray();
 
-                    var figmaImageResponse = await AppContext.Api.GetImagesAsync(File, ids, imageFormat);
+                    var figmaImageResponse = await AppContext.Api.GetImagesAsync(FigmaFileId, ids, imageFormat);
                     if (figmaImageResponse != null)
                     {
                         foreach (var image in figmaImageResponse.images)

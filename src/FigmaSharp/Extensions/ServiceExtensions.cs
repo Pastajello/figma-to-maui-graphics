@@ -97,13 +97,10 @@ namespace FigmaSharp
         public static bool ContainsSourceImage(this FigmaNode node)
         {
             FigmaPaint[] fills = null;
-            if (node is FigmaFrame frame)
+          
+            if(node.HasFills)
             {
-                fills = frame.fills;
-            }
-            else if (node is FigmaVector vector)
-            {
-                fills = vector.fills;
+                fills = node.fills;
             }
 
             if (fills != null)

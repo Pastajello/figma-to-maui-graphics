@@ -25,14 +25,13 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-
 using FigmaSharp.Models;
 
 namespace FigmaSharp.Services
 {
     public interface INodeProvider
     {
-        string File { get; }
+        string FigmaFileId { get; }
         event EventHandler ImageLinksProcessed;
         List<FigmaNode> Nodes { get; }
         FigmaFileResponse Response { get; }
@@ -50,12 +49,15 @@ namespace FigmaSharp.Services
         FigmaNode FindByPath(params string[] path);
         FigmaNode FindByName(string nodeName);
 
-        bool TryGetMainInstance (FigmaInstance figmaInstance, out FigmaInstance outInstance);
-        bool TryGetMainComponent (FigmaInstance figmaInstance, out FigmaComponentEntity outInstance);
+        bool TryGetMainInstance(FigmaInstance figmaInstance, out FigmaInstance outInstance);
+        bool TryGetMainComponent(FigmaInstance figmaInstance, out FigmaComponentEntity outInstance);
         bool TryGetStyle(string fillStyleValue, out FigmaStyle style);
 
         bool RendersAsImage(FigmaNode figmaNode);
-        void SaveResourceFiles(string destinationDirectory, string format, IImageNodeRequest[] downloadImages);
+
+        Task SaveResourceFilesAsync(
+            string destinationDirectory,
+            string format,
+            IImageNodeRequest[] downloadImages);
     }
 }
- 

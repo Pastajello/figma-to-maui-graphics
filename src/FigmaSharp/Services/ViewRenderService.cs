@@ -401,7 +401,7 @@ namespace FigmaSharp.Services
             try
             {
                 if (options.LoadFileProvider) {
-                    await nodeProvider.LoadAsync(figmaName ?? nodeProvider.File);
+                    await nodeProvider.LoadAsync(figmaName ?? nodeProvider.FigmaFileId);
                 }
 
                 //we generate all the processed nodes
@@ -434,7 +434,7 @@ namespace FigmaSharp.Services
             try
             {
                 if (options.LoadFileProvider)
-                    nodeProvider.Load(figmaName ?? nodeProvider.File);
+                    nodeProvider.Load(figmaName ?? nodeProvider.FigmaFileId);
 
                 //we generate all the processed nodes
                 Refresh(options);

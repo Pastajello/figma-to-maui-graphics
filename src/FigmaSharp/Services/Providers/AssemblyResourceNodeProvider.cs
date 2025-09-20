@@ -35,10 +35,10 @@ namespace FigmaSharp.Services
     {
         public Assembly Assembly { get; set; }
 
-        public AssemblyResourceNodeProvider(Assembly assembly, string file)
+        public AssemblyResourceNodeProvider(Assembly assembly, string figmaFileId)
         {
             Assembly = assembly;
-            File = file;
+            FigmaFileId = figmaFileId;
         }
 
         public override Task<string> GetContentTemplate(string file)

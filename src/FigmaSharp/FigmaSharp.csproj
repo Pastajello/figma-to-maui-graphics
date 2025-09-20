@@ -26,7 +26,6 @@
 		<Folder Include="WebApi\" />
 		<Folder Include="FigmaPackage\" />
 		<Folder Include="WebApi\Response\" />
-		<Folder Include="WebApi\Models\" />
 		<Folder Include="Services\Nodes\" />
 		<Folder Include="Services\Providers\" />
 		<Folder Include="Converters\Layers\" />

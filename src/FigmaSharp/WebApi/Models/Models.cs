@@ -186,10 +186,6 @@ namespace FigmaSharp.Models
         [DisplayName("Children")]
         public FigmaNode[] children { get; set; }
 
-        [DisplayName("Fills")]
-        public FigmaPaint[] fills { get; set; }
-        public bool HasFills => fills?.Length > 0;
-
         [DisplayName("Strokes")]
         public FigmaPaint[] strokes { get; set; }
         public bool HasStrokes => strokes?.Length > 0;
@@ -353,9 +349,7 @@ namespace FigmaSharp.Models
         [DisplayName("Stroke Dashes")]
         public float[] strokeDashes { get; set; }
 
-        [DisplayName("Fills")]
-        public FigmaPaint[] fills { get; set; }
-        public bool HasFills => fills?.Length > 0;
+       
 
         [Category("Style")]
         [DisplayName("Styles")]
@@ -413,37 +407,6 @@ namespace FigmaSharp.Models
     public class FigmaComponentEntity : FigmaFrame
     {
 
-    }
-
-    public class FigmaNode
-    {
-        [JsonIgnore()]
-        [Category("General")]
-        [DisplayName("Parent")]
-        public FigmaNode Parent { get; set; }
-
-        [Category("General")]
-        [DisplayName("Id")]
-        public string id { get; set; }
-
-        [Category("General")]
-        [DisplayName("Name")]
-        public string name { get; set; }
-
-        [Category("General")]
-        [DisplayName("Type")]
-        public string type { get; set; }
-
-        [Category("General")]
-        [DisplayName("Visible")]
-        [DefaultValue(true)]
-        [JsonProperty(DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate)]
-        public bool visible { get; set; }
-
-        public override string ToString()
-        {
-            return string.Format("[{0}:{1}:{2}]", type, id, name);
-        }
     }
 
     #endregion

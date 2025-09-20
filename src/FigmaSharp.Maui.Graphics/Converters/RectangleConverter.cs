@@ -9,7 +9,8 @@ namespace FigmaSharp.Maui.Graphics.Converters
 {
     internal class RectangleConverter : RectangleVectorConverterBase
     {
-        public override string ConvertToCode(CodeNode currentNode, CodeNode parentNode, ICodeRenderService rendererService)
+        public override string ConvertToCode(CodeNode currentNode, CodeNode parentNode,
+            ICodeRenderService rendererService)
         {
             if (currentNode.Node is not RectangleVector rectangleVector)
             {
@@ -44,21 +45,29 @@ namespace FigmaSharp.Maui.Graphics.Converters
                     if (backgroundPaint.gradientStops != null)
                     {
                         if (backgroundPaint.type.Equals("GRADIENT_LINEAR", StringComparison.CurrentCultureIgnoreCase))
-                            builder.AppendLine($"canvas.SetFillPaint({backgroundPaint.gradientStops.ToLinearGradientPaint()}, new RectF({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f));");
+                            builder.AppendLine(
+                                $"canvas.SetFillPaint({backgroundPaint.gradientStops.ToLinearGradientPaint()}, new RectF({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f));");
 
                         if (backgroundPaint.type.Equals("GRADIENT_RADIAL", StringComparison.CurrentCultureIgnoreCase))
-                            builder.AppendLine($"canvas.SetFillPaint({backgroundPaint.gradientStops.ToRadialGradientPaint()}, new RectF({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f));");
+                            builder.AppendLine(
+                                $"canvas.SetFillPaint({backgroundPaint.gradientStops.ToRadialGradientPaint()}, new RectF({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f));");
                     }
 
                     if (backgroundPaint.imageRef != null)
-                        builder.AppendLine($"canvas.FillColor  = Colors.White;");
+                    {
+                        HandleImageRef(builder, bounds, rectangleVector.id);
+                    }
+
+                    builder.AppendLine($"canvas.FillColor  = Colors.White;");
 
                     if (rectangleCornerRadii != null)
-                        builder.AppendLine(string.Format($"canvas.FillRoundedRectangle({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f, {rectangleCornerRadii[0].ToString(nfi)}f, {rectangleCornerRadii[1].ToString(nfi)}f, {rectangleCornerRadii[2].ToString(nfi)}f, {rectangleCornerRadii[3].ToString(nfi)}f);"));
+                        builder.AppendLine(string.Format(
+                            $"canvas.FillRoundedRectangle({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f, {rectangleCornerRadii[0].ToString(nfi)}f, {rectangleCornerRadii[1].ToString(nfi)}f, {rectangleCornerRadii[2].ToString(nfi)}f, {rectangleCornerRadii[3].ToString(nfi)}f);"));
                     else
                     {
                         var cornerRadius = rectangleVector.cornerRadius;
-                        builder.AppendLine(string.Format($"canvas.FillRoundedRectangle({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f, {cornerRadius.ToString(nfi)}f);"));
+                        builder.AppendLine(string.Format(
+                            $"canvas.FillRoundedRectangle({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f, {cornerRadius.ToString(nfi)}f);"));
                     }
                 }
             }
@@ -79,24 +88,32 @@ namespace FigmaSharp.Maui.Graphics.Converters
                     if (strokePaint.gradientStops != null)
                     {
                         if (strokePaint.type.Equals("GRADIENT_LINEAR", StringComparison.CurrentCultureIgnoreCase))
-                            builder.AppendLine($"canvas.SetFillPaint({strokePaint.gradientStops.ToLinearGradientPaint()}, new RectF({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f));");
+                            builder.AppendLine(
+                                $"canvas.SetFillPaint({strokePaint.gradientStops.ToLinearGradientPaint()}, new RectF({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f));");
 
                         if (strokePaint.type.Equals("GRADIENT_RADIAL", StringComparison.CurrentCultureIgnoreCase))
-                            builder.AppendLine($"canvas.SetFillPaint({strokePaint.gradientStops.ToRadialGradientPaint()}, new RectF({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f));");
+                            builder.AppendLine(
+                                $"canvas.SetFillPaint({strokePaint.gradientStops.ToRadialGradientPaint()}, new RectF({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f));");
                     }
 
                     if (strokePaint.imageRef != null)
-                        builder.AppendLine($"canvas.StrokeColor  = Colors.White;");
+                    {
+                        HandleImageRef(builder, bounds, rectangleVector.id);
+                    }
+
+                    builder.AppendLine($"canvas.StrokeColor  = Colors.White;");
 
                     var strokeSize = rectangleVector.strokeWeight;
                     builder.AppendLine($"canvas.StrokeSize  = {strokeSize};");
 
                     if (rectangleCornerRadii != null)
-                        builder.AppendLine(string.Format($"canvas.DrawRoundedRectangle({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f, {rectangleCornerRadii[0].ToString(nfi)}f, {rectangleCornerRadii[1].ToString(nfi)}f, {rectangleCornerRadii[2].ToString(nfi)}f, {rectangleCornerRadii[3].ToString(nfi)}f);"));
+                        builder.AppendLine(string.Format(
+                            $"canvas.DrawRoundedRectangle({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f, {rectangleCornerRadii[0].ToString(nfi)}f, {rectangleCornerRadii[1].ToString(nfi)}f, {rectangleCornerRadii[2].ToString(nfi)}f, {rectangleCornerRadii[3].ToString(nfi)}f);"));
                     else
                     {
                         var cornerRadius = rectangleVector.cornerRadius;
-                        builder.AppendLine(string.Format($"canvas.DrawRoundedRectangle({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f, {cornerRadius.ToString(nfi)}f);"));
+                        builder.AppendLine(string.Format(
+                            $"canvas.DrawRoundedRectangle({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f, {cornerRadius.ToString(nfi)}f);"));
                     }
                 }
             }
@@ -106,12 +123,13 @@ namespace FigmaSharp.Maui.Graphics.Converters
             return builder.ToString();
         }
 
-        public override Views.IView ConvertToView(FigmaNode currentNode, ViewNode parent, ViewRenderService rendererService)
+        public override Views.IView ConvertToView(FigmaNode currentNode, ViewNode parent,
+            ViewRenderService rendererService)
         {
             throw new NotImplementedException();
         }
 
-        public override Type GetControlType(FigmaNode currentNode)    
+        public override Type GetControlType(FigmaNode currentNode)
             => typeof(View);
     }
 }
