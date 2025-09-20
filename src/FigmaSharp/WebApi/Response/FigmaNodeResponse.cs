@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 
 namespace FigmaSharp.Models;
 
+
 public class FigmaNodeResponse
 {
     public string name { get; set; }
@@ -170,10 +171,10 @@ public class Document
     public string type { get; set; }
     public string scrollBehavior { get; set; }
     public List<FigmaNode> children { get; set; }
-    public BackgroundColor backgroundColor { get; set; }
-    public object prototypeStartNodeID { get; set; }
-    public List<object> flowStartingPoints { get; set; }
-    public PrototypeDevice prototypeDevice { get; set; }
+    // public BackgroundColor backgroundColor { get; set; }
+    // public object prototypeStartNodeID { get; set; }
+    // public List<object> flowStartingPoints { get; set; }
+    // public PrototypeDevice prototypeDevice { get; set; }
 }
 
 public class ExplicitVariableModes
@@ -225,11 +226,11 @@ public class LayoutGrid
 public class Node
 {
     public Node Parent { get; set; }
-    public Document document { get; set; }
-    public Dictionary<string, FigmaComponent> components { get; set; }
-    public Dictionary<string, ComponentSet> componentSets { get; set; }
-    public int schemaVersion { get; set; }
-    public Styles styles { get; set; }
+    public FigmaCanvas document { get; set; }
+    // public Dictionary<string, FigmaComponent> components { get; set; }
+    // public Dictionary<string, ComponentSet> componentSets { get; set; }
+    // public int schemaVersion { get; set; }
+    // public Styles styles { get; set; }
 }
 
 public class Override

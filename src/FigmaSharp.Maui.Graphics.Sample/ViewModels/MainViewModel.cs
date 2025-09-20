@@ -184,13 +184,10 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
                 {
                     IsGenerating = true;
 
-                    await _remoteNodeProvider.LoadAsync(FileId, nodeModel.Node.id,nodeModel?.Node, 2);
+                    var nodess = await _remoteNodeProvider.LoadAsync(FileId, nodeModel.Node.id, nodeModel?.Node, 3);
                     Console.WriteLine($"after load");
 
-                    nodeModel.Node = _codeRenderer.NodeProvider.Nodes
-                        .FirstOrDefault(x => x.id == nodeModel.Node.id);
-
-                    var nodes = GetNodes(nodeModel.Node);
+                    var nodes = nodeModel.Node.GetNodes();
 
                     var newNodes = MapFigmaNodes(nodes);
 
@@ -204,9 +201,10 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
                     }
 
                     TreeNodes = new ObservableCollection<FlatNode>(treeNodes);
-                    await GeneratePageSourceCode(nodeModel);
                     nodeModel.IsLoaded = true;
                 }
+
+                await GeneratePageSourceCode(nodeModel);
 
                 SelectedNodeModel = nodeModel;
                 SelectedNodeModel.IsSelected = true;
@@ -240,7 +238,7 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
                         Id = node.id,
                         ParentId = node.Parent?.id,
                         Name = string.IsNullOrEmpty(node.name) ? $"Node {node.id}" : node.name,
-                        Depth = ComputeDepth(node),
+                        Depth = node.ComputeDepth(),
                         Tag = new NodeModel { Node = node }
                     });
                 }
@@ -251,39 +249,6 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
                 .Select(g => g.First());
 
             return groupedNodes;
-        }
-
-        int ComputeDepth(FigmaNode n)
-        {
-            int d = 0;
-            var p = n.Parent;
-            while (p != null)
-            {
-                d++;
-                p = p.Parent;
-            }
-
-            return d;
-        }
-
-        private List<FigmaNode> GetNodes(FigmaNode node)
-        {
-            var list = new List<FigmaNode>();
-
-            if (node is IFigmaNodeContainer container)
-            {
-                foreach (var child in container.children)
-                {
-                    list.Add(child);
-                    list.AddRange(GetNodes(child));
-                }
-            }
-            else
-            {
-                list.Add(node);
-            }
-
-            return list;
         }
 
         private async Task GeneratePageSourceCode(NodeModel nodeModel)
@@ -299,11 +264,10 @@ namespace FigmaSharp.Maui.Graphics.Sample.ViewModels
 
             var code = stringBuilder.ToString();
 
-            Log.Add($"Source Code for page {nodeModel.Node.name} generated successfully.");
             nodeModel.Code = code;
             nodeModel.CompilationResult = await CompileCodeAsync(code);
 
-            Log.Add($"Source Code for page {nodeModel.Name} generated successfully.");
+            Log.Add($"Source Code for page {nodeModel.Node.name} generated successfully.");
         }
 
         async Task<CompilationResult> CompileCodeAsync(string code)

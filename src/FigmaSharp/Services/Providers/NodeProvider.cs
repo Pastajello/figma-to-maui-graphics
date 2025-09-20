@@ -52,14 +52,12 @@ namespace FigmaSharp.Services
 
         public string FigmaFileId { get; set; }
 
-        public Task LoadAsync(string file) => Load(file);
-        public Task LoadAsync(string file, string nodeId,FigmaNode figmaNode, int depth) => LoadWithNodeId(file, nodeId,figmaNode, depth);
-
-        private async Task LoadWithNodeId(string file, string nodeId,FigmaNode node, int depth)
+        public async Task<List<FigmaNode>> LoadAsync(string file, string nodeId, FigmaNode node, int depth)
         {
             this.FigmaFileId = file;
 
             ImageProcessed = false;
+            var nodes = new List<FigmaNode>();
             try
             {
                 Console.WriteLine($"LoadWithNodeId");
@@ -76,11 +74,13 @@ namespace FigmaSharp.Services
                         {
                             container.children.Add(child);
                         }
-                        ProcessNodeRecursively(child, node);
+
+                        nodes.AddRange(ProcessNodeRecursively(child, node));
                     }
                 }
 
                 await LoadImages();
+                return nodes;
             }
             catch (System.Net.WebException ex)
             {
@@ -88,18 +88,22 @@ namespace FigmaSharp.Services
                     LoggingService.LogError($"Cannot connect to Figma server: TOKEN not configured.", ex);
                 else
                     LoggingService.LogError($"Cannot connect to Figma server: wrong TOKEN?", ex);
+
+                return new List<FigmaNode>();
             }
             catch (Exception ex)
             {
                 LoggingService.LogError(
                     $"Error reading remote resources. Ensure you added NewtonSoft nuget or cannot parse the to json?",
                     ex);
+                return new List<FigmaNode>();
             }
         }
 
-        public async Task Load(string file)
+        public async Task<List<FigmaNode>> LoadAsync(string file)
         {
             this.FigmaFileId = file;
+            var nodes = new List<FigmaNode>();
 
             ImageProcessed = false;
             try
@@ -113,9 +117,14 @@ namespace FigmaSharp.Services
 
                 //proceses all the views recursively
                 foreach (var item in Response.document.children)
-                    ProcessNodeRecursively(item, null);
+                {
+                    nodes.AddRange(ProcessNodeRecursively(item, null));
+                }
+                    
 
                 await LoadImages();
+
+                return nodes;
             }
             catch (System.Net.WebException ex)
             {
@@ -123,12 +132,15 @@ namespace FigmaSharp.Services
                     LoggingService.LogError($"Cannot connect to Figma server: TOKEN not configured.", ex);
                 else
                     LoggingService.LogError($"Cannot connect to Figma server: wrong TOKEN?", ex);
+
+                return new List<FigmaNode>();
             }
             catch (Exception ex)
             {
                 LoggingService.LogError(
                     $"Error reading remote resources. Ensure you added NewtonSoft nuget or cannot parse the to json?",
                     ex);
+                return new List<FigmaNode>();
             }
         }
 
@@ -222,28 +234,14 @@ namespace FigmaSharp.Services
             return Nodes.FirstOrDefault(s => s.name == name);
         }
 
-        // void ProcessNodeRecursively(Node node, Node parent)
-        // {
-        //     node.Parent = parent;
-        //     Nodes.Add(node);
-        //
-        //     if (node is FigmaInstance instance)
-        //     {
-        //         if (Response.components.TryGetValue(instance.componentId, out var figmaComponent))
-        //             instance.Component = figmaComponent;
-        //     }
-        //
-        //     if (node is IFigmaNodeContainer nodeContainer)
-        //     {
-        //         foreach (var item in nodeContainer.children)
-        //             ProcessNodeRecursively(item, node);
-        //     }
-        // }
-
-
-        void ProcessNodeRecursively(FigmaNode node, FigmaNode parent)
+        List<FigmaNode> ProcessNodeRecursively(FigmaNode node, FigmaNode parent, List<FigmaNode> children = null)
         {
+            if (children == null)
+            {
+                children = new List<FigmaNode>();
+            }
             node.Parent = parent;
+            children.Add(node);
             Nodes.Add(node);
 
             if (node is FigmaInstance instance)
@@ -255,8 +253,13 @@ namespace FigmaSharp.Services
             if (node is IFigmaNodeContainer nodeContainer)
             {
                 foreach (var item in nodeContainer.children)
-                    ProcessNodeRecursively(item, node);
+                {
+                    ProcessNodeRecursively(item, node,children);
+                }
             }
+
+
+            return children;
         }
 
         public abstract Task<string> GetContentTemplate(string file);

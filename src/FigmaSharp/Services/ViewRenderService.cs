@@ -434,7 +434,7 @@ namespace FigmaSharp.Services
             try
             {
                 if (options.LoadFileProvider)
-                    nodeProvider.Load(figmaName ?? nodeProvider.FigmaFileId);
+                    nodeProvider.LoadAsync(figmaName ?? nodeProvider.FigmaFileId);
 
                 //we generate all the processed nodes
                 Refresh(options);

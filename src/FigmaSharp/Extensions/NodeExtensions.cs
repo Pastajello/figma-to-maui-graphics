@@ -92,6 +92,39 @@ namespace FigmaSharp
             }
             return false;
         }
+        
+        public static List<FigmaNode> GetNodes(this FigmaNode node)
+        {
+            var list = new List<FigmaNode>();
+
+            if (node is IFigmaNodeContainer container)
+            {
+                foreach (var child in container.children)
+                {
+                    list.Add(child);
+                    list.AddRange(child.GetNodes());
+                }
+            }
+            else
+            {
+                list.Add(node);
+            }
+
+            return list;
+        }
+        
+        public static  int ComputeDepth(this FigmaNode n)
+        {
+            int d = 0;
+            var p = n.Parent;
+            while (p != null)
+            {
+                d++;
+                p = p.Parent;
+            }
+
+            return d;
+        }
 
         public static bool TryGetNodeCustomName(this FigmaNode node, out string customName)
         {

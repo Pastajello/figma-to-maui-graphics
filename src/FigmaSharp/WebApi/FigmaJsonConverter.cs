@@ -46,7 +46,10 @@ namespace FigmaSharp
             JObject jsonObject = JObject.Load(reader);
 
             object figmaObject = null;
-
+            if (jsonObject.ContainsKey("id") && jsonObject["id"].ToString() == "11679:113")
+            {
+                
+            }
             if (!jsonObject.ContainsKey ("type") || string.IsNullOrEmpty (jsonObject["type"].Value<string> ()))
             {
                 if (objectType == typeof (FigmaPoint))

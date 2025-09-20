@@ -38,8 +38,7 @@ namespace FigmaSharp.Services
 
         Task<string> GetContentTemplate(string file);
 
-        Task LoadAsync(string file);
-        Task Load(string file);
+        Task<List<FigmaNode>> LoadAsync(string file);
         void Save(string filePath);
         void OnStartImageLinkProcessing(List<ViewNode> imageVectors);
 
