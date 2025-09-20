@@ -53,21 +53,22 @@ namespace FigmaSharp.Maui.Graphics.Converters
                                 $"canvas.SetFillPaint({backgroundPaint.gradientStops.ToRadialGradientPaint()}, new RectF({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f));");
                     }
 
-                    if (backgroundPaint.imageRef != null)
-                    {
-                        HandleImageRef(builder, bounds, rectangleVector.id);
-                    }
-
-                    builder.AppendLine($"canvas.FillColor  = Colors.White;");
 
                     if (rectangleCornerRadii != null)
+                    {
                         builder.AppendLine(string.Format(
                             $"canvas.FillRoundedRectangle({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f, {rectangleCornerRadii[0].ToString(nfi)}f, {rectangleCornerRadii[1].ToString(nfi)}f, {rectangleCornerRadii[2].ToString(nfi)}f, {rectangleCornerRadii[3].ToString(nfi)}f);"));
+                    }
                     else
                     {
                         var cornerRadius = rectangleVector.cornerRadius;
                         builder.AppendLine(string.Format(
                             $"canvas.FillRoundedRectangle({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f, {cornerRadius.ToString(nfi)}f);"));
+                    }
+
+                    if (backgroundPaint.imageRef != null)
+                    {
+                        HandleImageRef(builder, bounds, rectangleVector.id);
                     }
                 }
             }
@@ -96,13 +97,7 @@ namespace FigmaSharp.Maui.Graphics.Converters
                                 $"canvas.SetFillPaint({strokePaint.gradientStops.ToRadialGradientPaint()}, new RectF({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f));");
                     }
 
-                    if (strokePaint.imageRef != null)
-                    {
-                        HandleImageRef(builder, bounds, rectangleVector.id);
-                    }
-
-                    builder.AppendLine($"canvas.StrokeColor  = Colors.White;");
-
+                   
                     var strokeSize = rectangleVector.strokeWeight;
                     builder.AppendLine($"canvas.StrokeSize  = {strokeSize};");
 
@@ -115,6 +110,12 @@ namespace FigmaSharp.Maui.Graphics.Converters
                         builder.AppendLine(string.Format(
                             $"canvas.DrawRoundedRectangle({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f, {cornerRadius.ToString(nfi)}f);"));
                     }
+                    
+                    if (strokePaint.imageRef != null)
+                    {
+                        HandleImageRef(builder, bounds, rectangleVector.id);
+                    }
+
                 }
             }
 

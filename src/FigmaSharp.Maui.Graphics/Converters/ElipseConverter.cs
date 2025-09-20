@@ -52,13 +52,15 @@ namespace FigmaSharp.Maui.Graphics.Converters
                                 $"canvas.SetFillPaint({backgroundPaint.gradientStops.ToRadialGradientPaint()}, new RectF({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f));");
                     }
 
+                  
+
+                    builder.AppendLine(string.Format(
+                        $"canvas.FillEllipse({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f);"));
+                    
                     if (backgroundPaint.imageRef != null)
                     {
                         HandleImageRef(builder, bounds, elipseNode.id);
                     }
-
-                    builder.AppendLine(string.Format(
-                        $"canvas.FillEllipse({bounds.X.ToString(nfi)}f, {bounds.Y.ToString(nfi)}f, {bounds.Width.ToString(nfi)}f, {bounds.Height.ToString(nfi)}f);"));
                 }
             }
 
